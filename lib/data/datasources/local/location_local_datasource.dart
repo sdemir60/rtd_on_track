@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../models/location_model.dart';
+import '../../../core/utils/logger_util.dart';
 
 abstract class LocationLocalDataSource {
   Future<List<LocationModel>> getLocations();
@@ -31,10 +31,7 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
         _isInitialized = true;
       }
     } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print("Veritabanı başlatma hatası: $e");
-        print("Stack trace: $stackTrace");
-      }
+      logger.error("Veritabanı başlatma hatası", e, stackTrace);
       //TODO: Hata olsa da başlatmış saymak ne kadar doğru tekrar gözden geçir.
       _isInitialized = true;
     }
@@ -48,9 +45,7 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
 
       return await _isar!.locationModels.where().sortByTimestamp().findAll();
     } catch (e) {
-      if (kDebugMode) {
-        print("Konumları alma hatası: $e");
-      }
+      logger.error("Konumları alma hatası", e);
       return [];
     }
   }
@@ -67,9 +62,7 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
 
       return location;
     } catch (e) {
-      if (kDebugMode) {
-        print("Konum kaydetme hatası: $e");
-      }
+      logger.error("Konum kaydetme hatası", e);
       return location;
     }
   }
@@ -84,9 +77,7 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
         await _isar!.locationModels.clear();
       });
     } catch (e) {
-      if (kDebugMode) {
-        print("Konumları sıfırlama hatası: $e");
-      }
+      logger.error("Konumları sıfırlama hatası", e);
     }
   }
 }

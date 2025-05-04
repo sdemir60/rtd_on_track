@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../constants/app_constants.dart';
 import '../../domain/usecases/track_location_usecase.dart';
 import 'location_service.dart';
+import '../utils/logger_util.dart';
 
 abstract class BackgroundService {
   Future<void> initializeService(TrackLocationUseCase trackLocationUseCase);
@@ -47,9 +47,7 @@ class BackgroundServiceImpl implements BackgroundService {
                 try {
                   await trackLocationUseCase(position);
                 } catch (e) {
-                  if (kDebugMode) {
-                    print("Konum takibi hatası: $e");
-                  }
+                  logger.error("Konum takibi hatası", e);
                 }
               });
 
@@ -64,9 +62,7 @@ class BackgroundServiceImpl implements BackgroundService {
                 'isRunning': true,
               });
             } catch (e) {
-              if (kDebugMode) {
-                print("Arka plan servisi çalıştırma hatası: $e");
-              }
+              logger.error("Arka plan servisi çalıştırma hatası", e);
             }
           },
           autoStart: false,
@@ -85,10 +81,7 @@ class BackgroundServiceImpl implements BackgroundService {
         ),
       );
     } catch (e, stackTrace) {
-      if (kDebugMode) {
-        print("Arka plan servisi başlatma hatası: $e");
-        print("Stack trace: $stackTrace");
-      }
+      logger.error("Arka plan servisi başlatma hatası", e, stackTrace);
     }
   }
 
@@ -97,9 +90,7 @@ class BackgroundServiceImpl implements BackgroundService {
     try {
       await _service.startService();
     } catch (e) {
-      if (kDebugMode) {
-        print("Servis başlatma hatası: $e");
-      }
+      logger.error("Servis başlatma hatası", e);
     }
   }
 
@@ -110,9 +101,7 @@ class BackgroundServiceImpl implements BackgroundService {
       // TODO: Mantıkla bir yapı mı tekrar gözden geçirelim.
       await Future.delayed(const Duration(milliseconds: 500));
     } catch (e) {
-      if (kDebugMode) {
-        print("Servis durdurma hatası: $e");
-      }
+      logger.error("Servis durdurma hatası", e);
     }
   }
 
@@ -121,9 +110,7 @@ class BackgroundServiceImpl implements BackgroundService {
     try {
       return await _service.isRunning();
     } catch (e) {
-      if (kDebugMode) {
-        print("Servis durumu kontrol hatası: $e");
-      }
+      logger.error("Servis durumu kontrol hatası", e);
       return false;
     }
   }

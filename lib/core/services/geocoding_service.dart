@@ -1,4 +1,5 @@
 import 'package:geocoding/geocoding.dart';
+import '../utils/logger_util.dart';
 
 abstract class GeocodingService {
   Future<String?> getAddressFromCoordinates(double latitude, double longitude);
@@ -17,6 +18,7 @@ class GeocodingServiceImpl implements GeocodingService {
       }
       return null;
     } catch (e) {
+      logger.error("Adres bilgisi alınamadı", e);
       return null;
     }
   }

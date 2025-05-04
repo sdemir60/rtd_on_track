@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/constants/map_constants.dart';
+import '../../../core/utils/logger_util.dart';
 
 class MapWidget extends StatelessWidget {
   final List<LocationEntity> locations;
@@ -75,9 +75,7 @@ class MapWidget extends StatelessWidget {
         ],
       );
     } catch (e) {
-      if (kDebugMode) {
-        print("Harita oluşturma hatası: $e");
-      }
+      logger.error("Harita oluşturma hatası", e);
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -112,9 +110,7 @@ class MapWidget extends StatelessWidget {
         );
       }).toList();
     } catch (e) {
-      if (kDebugMode) {
-        print("Marker oluşturma hatası: $e");
-      }
+      logger.error("Marker oluşturma hatası", e);
       return [];
     }
   }

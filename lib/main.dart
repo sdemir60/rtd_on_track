@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'data/datasources/local/location_local_datasource.dart';
@@ -10,6 +9,7 @@ import 'domain/usecases/toggle_tracking_usecase.dart';
 import 'core/services/location_service.dart';
 import 'core/services/background_service.dart';
 import 'core/services/geocoding_service.dart';
+import 'core/utils/logger_util.dart';
 import 'presentation/cubits/location/location_cubit.dart';
 import 'presentation/pages/map_page.dart';
 
@@ -34,9 +34,7 @@ void main() async {
     try {
       await locationLocalDataSource.initialize();
     } catch (e) {
-      if (kDebugMode) {
-        print("Veritabanı başlatma hatası: $e");
-      }
+      logger.error("Veritabanı başlatma hatası", e);
     }
 
     final locationRepository = LocationRepositoryImpl(
@@ -52,9 +50,7 @@ void main() async {
     try {
       await backgroundService.initializeService(trackLocationUseCase);
     } catch (e) {
-      if (kDebugMode) {
-        print("Arka plan servisi başlatma hatası: $e");
-      }
+      logger.error("Arka plan servisi başlatma hatası", e);
     }
 
     runApp(MyApp(
@@ -65,10 +61,7 @@ void main() async {
       locationService: locationService,
     ));
   } catch (e, stackTrace) {
-    if (kDebugMode) {
-      print("Uygulama başlatma hatası: $e");
-      print("Stack trace: $stackTrace");
-    }
+    logger.error("Uygulama başlatma hatası", e, stackTrace);
     runApp(MaterialApp(
       home: Scaffold(
         body: Center(

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubits/location/location_cubit.dart';
@@ -7,6 +6,7 @@ import '../widgets/map_widget.dart';
 import '../widgets/control_buttons.dart';
 import '../widgets/location_bottom_sheet.dart';
 import '../../core/utils/permission_utils.dart';
+import '../../core/utils/logger_util.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -33,9 +33,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
         _isLoading = false;
       });
     } catch (e) {
-      if (kDebugMode) {
-        print("Uygulama başlatma hatası: $e");
-      }
+      logger.error("Uygulama başlatma hatası", e);
       setState(() {
         _isLoading = false;
       });
@@ -64,9 +62,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
         await PermissionUtils.requestBackgroundLocationPermission();
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("İzin isteme hatası: $e");
-      }
+      logger.error("İzin isteme hatası", e);
     }
   }
 
@@ -74,9 +70,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     try {
       context.read<LocationCubit>().loadLocations();
     } catch (e) {
-      if (kDebugMode) {
-        print("Konum yükleme hatası: $e");
-      }
+      logger.error("Konum yükleme hatası", e);
     }
   }
 
@@ -84,9 +78,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     try {
       context.read<LocationCubit>().toggleTracking();
     } catch (e) {
-      if (kDebugMode) {
-        print("Takip durumu değiştirme hatası: $e");
-      }
+      logger.error("Takip durumu değiştirme hatası", e);
     }
   }
 
@@ -107,9 +99,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
               try {
                 context.read<LocationCubit>().resetLocations();
               } catch (e) {
-                if (kDebugMode) {
-                  print("Konumları sıfırlama hatası: $e");
-                }
+                logger.error("Konumları sıfırlama hatası", e);
               }
             },
             child: const Text('Sıfırla'),
