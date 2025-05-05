@@ -228,25 +228,31 @@ class _MapWidgetState extends State<MapWidget> {
             urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             subdomains: const ['a', 'b', 'c'],
           ),
-          MarkerClusterLayerWidget(
-            options: MarkerClusterLayerOptions(
-              maxClusterRadius: MapConstants.maxClusterRadius,
-              size: const Size(40, 40),
-              padding: const EdgeInsets.all(50),
-              markers: _buildMarkers(),
-              builder: (context, markers) => Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: Theme.of(context).primaryColor,
-                ),
-                child: Center(
-                  child: Text(
-                    markers.length.toString(),
-                    style: const TextStyle(color: Colors.white),
+          BlocBuilder<LocationCubit, LocationState>(
+            buildWhen: (previous, current) =>
+                previous.selectedLocation != current.selectedLocation,
+            builder: (context, state) {
+              return MarkerClusterLayerWidget(
+                options: MarkerClusterLayerOptions(
+                  maxClusterRadius: MapConstants.maxClusterRadius,
+                  size: const Size(40, 40),
+                  padding: const EdgeInsets.all(50),
+                  markers: _buildMarkers(),
+                  builder: (context, markers) => Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    child: Center(
+                      child: Text(
+                        markers.length.toString(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
           if (widget.currentPosition != null)
             MarkerLayer(
@@ -286,15 +292,25 @@ class _MapWidgetState extends State<MapWidget> {
   List<Marker> _buildMarkers() {
     try {
       return widget.locations.map((location) {
+        final selectedLocation =
+            context.read<LocationCubit>().state.selectedLocation;
+        final isSelected = selectedLocation?.id == location.id;
+
         return Marker(
           width: 40.0,
           height: 40.0,
           point: location.position,
           child: GestureDetector(
-            onTap: () => widget.onLocationSelected(location),
-            child: const Icon(
+            onTap: () {
+              if (isSelected) {
+                context.read<LocationCubit>().clearSelectedLocation();
+              } else {
+                widget.onLocationSelected(location);
+              }
+            },
+            child: Icon(
               Icons.location_on,
-              color: Colors.red,
+              color: isSelected ? Colors.blue : Colors.red,
               size: 30,
             ),
           ),

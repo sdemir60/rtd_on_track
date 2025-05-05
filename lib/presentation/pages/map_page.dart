@@ -134,24 +134,6 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     );
   }
 
-  void _showLocationDetails(BuildContext context, LocationState state) {
-    if (state.selectedLocation != null) {
-      showModalBottomSheet(
-        context: context,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (context) => LocationBottomSheet(
-          location: state.selectedLocation!,
-          onClose: () {
-            Navigator.of(context).pop();
-            context.read<LocationCubit>().clearSelectedLocation();
-          },
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,10 +161,6 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
               SnackBar(content: Text(state.errorMessage!)),
             );
           }
-
-          if (state.selectedLocation != null) {
-            _showLocationDetails(context, state);
-          }
         },
         builder: (context, state) {
           final bool isLoading = _isLoading ||
@@ -200,20 +178,171 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
                     context.read<LocationCubit>().selectLocation(location);
                   },
                 ),
-                Positioned(
-                  right: 16,
-                  bottom: 16,
-                  child: ControlButtons(
-                    trackingStatus: state.trackingStatus,
-                    onToggleTracking: _toggleTracking,
-                    onResetLocations: _resetLocations,
-                  ),
+                _BottomSheetWithControls(
+                  trackingStatus: state.trackingStatus,
+                  onToggleTracking: _toggleTracking,
+                  onResetLocations: _resetLocations,
+                  locations: state.locations,
                 ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class _BottomSheetWithControls extends StatefulWidget {
+  final TrackingStatus trackingStatus;
+  final VoidCallback onToggleTracking;
+  final VoidCallback onResetLocations;
+  final List locations;
+
+  const _BottomSheetWithControls({
+    required this.trackingStatus,
+    required this.onToggleTracking,
+    required this.onResetLocations,
+    required this.locations,
+  });
+
+  @override
+  State<_BottomSheetWithControls> createState() =>
+      _BottomSheetWithControlsState();
+}
+
+class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
+  double _sheetExtent = 0.15;
+  final DraggableScrollableController _controller =
+      DraggableScrollableController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            DraggableScrollableSheet(
+              controller: _controller,
+              initialChildSize: 0.15,
+              minChildSize: 0.10,
+              maxChildSize: 0.5,
+              snap: true,
+              snapSizes: const [0.15, 0.3],
+              builder: (context, scrollController) {
+                return BlocConsumer<LocationCubit, LocationState>(
+                  listenWhen: (previous, current) =>
+                      previous.selectedLocation != current.selectedLocation,
+                  listener: (context, state) {
+                    if (state.selectedLocation != null) {
+                      _controller.animateTo(
+                        0.3,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    } else if (state.selectedLocation == null &&
+                        _sheetExtent > 0.15) {
+                      _controller.animateTo(
+                        0.15,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  buildWhen: (previous, current) =>
+                      previous.selectedLocation != current.selectedLocation,
+                  builder: (context, locationState) {
+                    return NotificationListener<
+                        DraggableScrollableNotification>(
+                      onNotification: (notification) {
+                        setState(() {
+                          _sheetExtent = notification.extent;
+                        });
+                        return true;
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(20)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, -4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[400],
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView(
+                                controller: scrollController,
+                                children: [
+                                  BlocBuilder<LocationCubit, LocationState>(
+                                    builder: (context, state) {
+                                      if (state.selectedLocation != null) {
+                                        return LocationBottomSheet(
+                                          location: state.selectedLocation!,
+                                          onClose: () {
+                                            context
+                                                .read<LocationCubit>()
+                                                .clearSelectedLocation();
+                                          },
+                                        );
+                                      } else {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: Text(
+                                            'Konum detayları için haritadaki bir işaretleyiciye tıklayın.',
+                                            style: TextStyle(fontSize: 16),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+            Positioned(
+              right: 16,
+              bottom: constraints.maxHeight * _sheetExtent + 8,
+              child: ControlButtons(
+                trackingStatus: widget.trackingStatus,
+                onToggleTracking: widget.onToggleTracking,
+                onResetLocations: widget.onResetLocations,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
