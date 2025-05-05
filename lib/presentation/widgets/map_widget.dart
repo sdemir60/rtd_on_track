@@ -149,7 +149,7 @@ class _MapWidgetState extends State<MapWidget> {
         maxLng = math.max(maxLng, widget.currentPosition!.longitude);
       }
 
-      final paddingFactor = 0.1;
+      final paddingFactor = 0.5;
       final latDiff = (maxLat - minLat) * paddingFactor;
       final lngDiff = (maxLng - minLng) * paddingFactor;
 
