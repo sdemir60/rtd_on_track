@@ -10,12 +10,15 @@ import 'core/services/location_service.dart';
 import 'core/services/background_service.dart';
 import 'core/services/geocoding_service.dart';
 import 'core/utils/logger_util.dart';
+import 'core/utils/notification_helper/notification_helper.dart';
 import 'presentation/cubits/location/location_cubit.dart';
 import 'presentation/pages/map_page.dart';
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    await NotificationHelper.initialize();
 
     runApp(const MaterialApp(
       home: Scaffold(

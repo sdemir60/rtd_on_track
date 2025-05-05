@@ -4,6 +4,44 @@ import '../constants/app_constants.dart';
 import '../../domain/usecases/track_location_usecase.dart';
 import 'location_service.dart';
 import '../utils/logger_util.dart';
+import '../utils/notification_helper/notification_helper.dart';
+
+@pragma('vm:entry-point')
+void onStart(ServiceInstance service) async {
+  logger.info("Arka plan servisi başlatılıyor (onStart)");
+  try {
+    await NotificationHelper.initialize();
+
+    if (service is AndroidServiceInstance) {
+      service.on('setAsForeground').listen((event) {
+        service.setAsForegroundService();
+      });
+      service.on('setAsBackground').listen((event) {
+        service.setAsBackgroundService();
+      });
+    }
+
+    service.on('stopService').listen((event) {
+      service.stopSelf();
+    });
+
+    if (service is AndroidServiceInstance) {
+      await service.setForegroundNotificationInfo(
+        title: AppConstants.locationNotificationTitle,
+        content: AppConstants.locationNotificationText,
+      );
+
+      await NotificationHelper.showForegroundServiceNotification();
+    }
+
+    service.invoke('update', {
+      'isRunning': true,
+    });
+    logger.info("Arka plan servisi başarıyla başlatıldı (onStart sonu)");
+  } catch (e, stackTrace) {
+    logger.error("Arka plan servisi çalıştırma hatası", e, stackTrace);
+  }
+}
 
 abstract class BackgroundService {
   Future<void> initializeService(TrackLocationUseCase trackLocationUseCase);
@@ -25,46 +63,11 @@ class BackgroundServiceImpl implements BackgroundService {
   Future<void> initializeService(
       TrackLocationUseCase trackLocationUseCase) async {
     try {
+      await NotificationHelper.initialize();
+
       await _service.configure(
         androidConfiguration: AndroidConfiguration(
-          onStart: (service) async {
-            try {
-              if (service is AndroidServiceInstance) {
-                service.on('setAsForeground').listen((event) {
-                  service.setAsForegroundService();
-                });
-                service.on('setAsBackground').listen((event) {
-                  service.setAsBackgroundService();
-                });
-              }
-
-              service.on('stopService').listen((event) {
-                service.stopSelf();
-              });
-
-              final locationStream = _locationService.getLocationStream();
-              locationStream.listen((position) async {
-                try {
-                  await trackLocationUseCase(position);
-                } catch (e) {
-                  logger.error("Konum takibi hatası", e);
-                }
-              });
-
-              if (service is AndroidServiceInstance) {
-                service.setForegroundNotificationInfo(
-                  title: AppConstants.locationNotificationTitle,
-                  content: AppConstants.locationNotificationText,
-                );
-              }
-
-              service.invoke('update', {
-                'isRunning': true,
-              });
-            } catch (e) {
-              logger.error("Arka plan servisi çalıştırma hatası", e);
-            }
-          },
+          onStart: onStart,
           autoStart: false,
           isForegroundMode: true,
           notificationChannelId: AppConstants.locationChannelId,
@@ -80,6 +83,21 @@ class BackgroundServiceImpl implements BackgroundService {
           },
         ),
       );
+
+      logger.info("Konum dinlemesi başlatıldı");
+      final locationStream = _locationService.getLocationStream();
+      bool firstPositionLogged = false;
+      locationStream.listen((position) async {
+        if (!firstPositionLogged) {
+          logger.info("İlk konum alındı: $position");
+          firstPositionLogged = true;
+        }
+        try {
+          await trackLocationUseCase(position);
+        } catch (e) {
+          logger.error("Konum takibi hatası", e);
+        }
+      });
     } catch (e, stackTrace) {
       logger.error("Arka plan servisi başlatma hatası", e, stackTrace);
     }
@@ -87,15 +105,25 @@ class BackgroundServiceImpl implements BackgroundService {
 
   @override
   Future<void> startService() async {
+    logger.info("Arka plan servisi başlatılıyor (startService)");
     try {
+      final isRunning = await _service.isRunning();
+      if (isRunning) {
+        logger.info("Servis zaten çalışıyor, yeniden başlatmaya gerek yok.");
+        return;
+      }
+
       await _service.startService();
-    } catch (e) {
-      logger.error("Servis başlatma hatası", e);
+      logger.info("Arka plan servisi başarıyla başlatıldı");
+    } catch (e, stackTrace) {
+      logger.error("Servis başlatma hatası", e, stackTrace);
+      throw Exception("Arka plan servisi başlatılamadı: $e");
     }
   }
 
   @override
   Future<void> stopService() async {
+    logger.info("Arka plan servisi durduruluyor (stopService)");
     try {
       _service.invoke('stopService');
       // TODO: Mantıkla bir yapı mı tekrar gözden geçirelim.

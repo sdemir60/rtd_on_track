@@ -25,12 +25,22 @@ class LocationServiceImpl implements LocationService {
     }
   }
 
+  // TODO: Ayarları tekrar gözden geçir.
   @override
   Stream<LatLng> getLocationStream() {
     return Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
+      locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 10, //TODO: Sabitlere eklenebilir.
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationText: "Konumunuz arka planda güncelleniyor",
+          notificationTitle: "Konum Servisi Aktif",
+          enableWakeLock: true,
+          notificationIcon: AndroidResource(
+            name: 'ic_stat_location',
+            defType: 'drawable',
+          ),
+        ),
       ),
     ).map((position) => LocationUtils.positionToLatLng(position));
   }
