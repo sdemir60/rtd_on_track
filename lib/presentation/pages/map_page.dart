@@ -5,6 +5,7 @@ import '../cubits/location/location_state.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/control_buttons.dart';
 import '../widgets/location_bottom_sheet.dart';
+import '../widgets/common/loading_overlay.dart';
 import '../../core/utils/permission_utils.dart';
 import '../../core/utils/logger_util.dart';
 import '../../core/services/preferences_service.dart';
@@ -59,21 +60,24 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   Future<void> _requestPermissions() async {
     try {
       logger.info("Izinler isteniyor");
-      
-      final hasNotificationPermission = await PermissionUtils.requestNotificationPermission();
+
+      final hasNotificationPermission =
+          await PermissionUtils.requestNotificationPermission();
       logger.info("Bildirim izni durumu: $hasNotificationPermission");
-      
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      final hasLocationPermission = await PermissionUtils.requestLocationPermission();
+
+      final hasLocationPermission =
+          await PermissionUtils.requestLocationPermission();
       logger.info("Konum izni durumu: $hasLocationPermission");
 
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       if (hasLocationPermission) {
-        final hasBackgroundLocationPermission = 
+        final hasBackgroundLocationPermission =
             await PermissionUtils.requestBackgroundLocationPermission();
-        logger.info("Arka plan konum izni durumu: $hasBackgroundLocationPermission");
+        logger.info(
+            "Arka plan konum izni durumu: $hasBackgroundLocationPermission");
       }
     } catch (e) {
       logger.error("Izin isteme hatasi", e);
@@ -169,40 +173,32 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
           }
         },
         builder: (context, state) {
-          return Stack(
-            children: [
-              MapWidget(
-                locations: state.locations,
-                currentPosition: state.currentPosition,
-                onLocationSelected: (location) {
-                  context.read<LocationCubit>().selectLocation(location);
-                },
-              ),
-              Positioned(
-                right: 16,
-                bottom: 16,
-                child: ControlButtons(
-                  trackingStatus: state.trackingStatus,
-                  onToggleTracking: _toggleTracking,
-                  onResetLocations: _resetLocations,
+          final bool isLoading = _isLoading ||
+              state.status == LocationStatus.loading ||
+              state.status == LocationStatus.initial;
+
+          return LoadingOverlay(
+            isLoading: isLoading,
+            child: Stack(
+              children: [
+                MapWidget(
+                  locations: state.locations,
+                  currentPosition: state.currentPosition,
+                  onLocationSelected: (location) {
+                    context.read<LocationCubit>().selectLocation(location);
+                  },
                 ),
-              ),
-              if (_isLoading ||
-                  state.status == LocationStatus.loading ||
-                  state.status == LocationStatus.initial)
-                const Positioned(
-                  top: 10,
-                  right: 10,
-                  child: Card(
-                    elevation: 4,
-                    shape: CircleBorder(),
-                    child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(strokeWidth: 3),
-                    ),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: ControlButtons(
+                    trackingStatus: state.trackingStatus,
+                    onToggleTracking: _toggleTracking,
+                    onResetLocations: _resetLocations,
                   ),
                 ),
-            ],
+              ],
+            ),
           );
         },
       ),

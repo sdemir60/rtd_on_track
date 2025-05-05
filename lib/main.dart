@@ -17,30 +17,17 @@ import 'presentation/cubits/location/location_state.dart';
 import 'presentation/pages/map_page.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   try {
-    WidgetsFlutterBinding.ensureInitialized();
-
     await NotificationHelper.initialize();
-
-    runApp(const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      ),
-    ));
 
     final locationService = LocationServiceImpl();
     final geocodingService = GeocodingServiceImpl();
     final preferencesService = PreferencesService();
-
     final locationLocalDataSource = LocationLocalDataSourceImpl();
 
-    try {
-      await locationLocalDataSource.initialize();
-    } catch (e) {
-      logger.error("Veritabanı başlatma hatası", e);
-    }
+    await locationLocalDataSource.initialize();
 
     final locationRepository = LocationRepositoryImpl(
       localDataSource: locationLocalDataSource,
@@ -55,11 +42,7 @@ void main() async {
     final toggleTrackingUseCase =
         ToggleTrackingUseCase(backgroundService, trackLocationUseCase);
 
-    try {
-      await backgroundService.initializeService(trackLocationUseCase);
-    } catch (e) {
-      logger.error("Arka plan servisi başlatma hatası", e);
-    }
+    await backgroundService.initializeService(trackLocationUseCase);
 
     final isTracking = await preferencesService.getTrackingStatus();
     logger.info("Uygulama başlatıldı, takip durumu: $isTracking");
@@ -77,7 +60,28 @@ void main() async {
     runApp(MaterialApp(
       home: Scaffold(
         body: Center(
-          child: Text("Uygulama başlatılamadı: $e"),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                Text("Uygulama başlatılamadı: $e", textAlign: TextAlign.center),
+              ],
+            ),
+          ),
         ),
       ),
     ));
