@@ -264,6 +264,15 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
                         setState(() {
                           _sheetExtent = notification.extent;
                         });
+
+                        if (notification.extent <= 0.03 &&
+                            context
+                                    .read<LocationCubit>()
+                                    .state
+                                    .selectedLocation !=
+                                null) {
+                          context.read<LocationCubit>().clearSelectedLocation();
+                        }
                         return true;
                       },
                       child: Container(
