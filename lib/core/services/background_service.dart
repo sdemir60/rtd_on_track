@@ -9,6 +9,9 @@ import 'location_service.dart';
 import '../utils/logger_util.dart';
 import '../utils/notification_helper/notification_helper.dart';
 import 'preferences_service.dart';
+import 'geocoding_service.dart';
+import '../../data/datasources/local/location_local_datasource.dart';
+import '../../data/repositories/location_repository_impl.dart';
 
 TrackLocationUseCase? _trackLocationUseCase;
 LocationService? _globalLocationService;
@@ -62,6 +65,10 @@ void onStart(ServiceInstance service) async {
     if (isTracking) {
       logger
           .info("Önceki takip durumu aktif, konum takibi yeniden başlatılıyor");
+      if (_globalLocationService == null) {
+        _globalLocationService = LocationServiceImpl();
+      }
+      _startLocationTracking();
     }
 
     logger.info("Arka plan servisi başarıyla başlatıldı (onStart sonu)");
@@ -71,11 +78,25 @@ void onStart(ServiceInstance service) async {
 }
 
 @pragma('vm:entry-point')
-void _startLocationTracking() {
+void _startLocationTracking() async {
   logger.info("Konum takibi başlatılıyor");
 
   if (_globalLocationService == null) {
     _globalLocationService = LocationServiceImpl();
+  }
+
+  final locationLocalDataSource = LocationLocalDataSourceImpl();
+  await locationLocalDataSource.initialize();
+
+  final geocodingService = GeocodingServiceImpl();
+
+  final locationRepository = LocationRepositoryImpl(
+    localDataSource: locationLocalDataSource,
+    geocodingService: geocodingService,
+  );
+
+  if (_trackLocationUseCase == null) {
+    _trackLocationUseCase = TrackLocationUseCase(locationRepository);
   }
 
   _locationSubscription?.cancel();
@@ -92,9 +113,14 @@ void _startLocationTracking() {
         });
       }
 
+      if (_trackLocationUseCase != null) {
+        await _trackLocationUseCase!(position);
+        logger.info("Konum veritabanına kaydedildi: $position");
+      }
+
       logger.info("Konum alındı: $position");
-    } catch (e) {
-      logger.error("Konum takibi hatası", e);
+    } catch (e, stackTrace) {
+      logger.error("Konum takibi hatası", e, stackTrace);
     }
   });
 }
