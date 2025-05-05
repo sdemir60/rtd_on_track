@@ -7,6 +7,7 @@ import '../widgets/control_buttons.dart';
 import '../widgets/location_bottom_sheet.dart';
 import '../../core/utils/permission_utils.dart';
 import '../../core/utils/logger_util.dart';
+import '../../core/services/preferences_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -17,6 +18,7 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   bool _isLoading = true;
+  final PreferencesService _preferencesService = PreferencesService();
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    logger.info("Uygulama yaşam döngüsü değişti: $state");
     if (state == AppLifecycleState.resumed) {
       _loadLocations();
     }
@@ -74,11 +77,10 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     }
   }
 
-  void _toggleTracking() {
+  void _toggleTracking() async {
     try {
-      _requestPermissions().then((_) {
-        context.read<LocationCubit>().toggleTracking();
-      });
+      await _requestPermissions();
+      context.read<LocationCubit>().toggleTracking();
     } catch (e) {
       logger.error("Takip durumu değiştirme hatası", e);
       ScaffoldMessenger.of(context).showSnackBar(

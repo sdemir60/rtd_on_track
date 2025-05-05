@@ -9,9 +9,11 @@ import 'domain/usecases/toggle_tracking_usecase.dart';
 import 'core/services/location_service.dart';
 import 'core/services/background_service.dart';
 import 'core/services/geocoding_service.dart';
+import 'core/services/preferences_service.dart';
 import 'core/utils/logger_util.dart';
 import 'core/utils/notification_helper/notification_helper.dart';
 import 'presentation/cubits/location/location_cubit.dart';
+import 'presentation/cubits/location/location_state.dart';
 import 'presentation/pages/map_page.dart';
 
 void main() async {
@@ -30,7 +32,7 @@ void main() async {
 
     final locationService = LocationServiceImpl();
     final geocodingService = GeocodingServiceImpl();
-    final backgroundService = BackgroundServiceImpl(locationService);
+    final preferencesService = PreferencesService();
 
     final locationLocalDataSource = LocationLocalDataSourceImpl();
 
@@ -48,7 +50,9 @@ void main() async {
     final getLocationsUseCase = GetLocationsUseCase(locationRepository);
     final resetLocationsUseCase = ResetLocationsUseCase(locationRepository);
     final trackLocationUseCase = TrackLocationUseCase(locationRepository);
-    final toggleTrackingUseCase = ToggleTrackingUseCase(backgroundService);
+    
+    final backgroundService = BackgroundServiceImpl(locationService);
+    final toggleTrackingUseCase = ToggleTrackingUseCase(backgroundService, trackLocationUseCase);
 
     try {
       await backgroundService.initializeService(trackLocationUseCase);
@@ -56,12 +60,16 @@ void main() async {
       logger.error("Arka plan servisi başlatma hatası", e);
     }
 
+    final isTracking = await preferencesService.getTrackingStatus();
+    logger.info("Uygulama başlatıldı, takip durumu: $isTracking");
+
     runApp(MyApp(
       getLocationsUseCase: getLocationsUseCase,
       resetLocationsUseCase: resetLocationsUseCase,
       trackLocationUseCase: trackLocationUseCase,
       toggleTrackingUseCase: toggleTrackingUseCase,
       locationService: locationService,
+      isTracking: isTracking,
     ));
   } catch (e, stackTrace) {
     logger.error("Uygulama başlatma hatası", e, stackTrace);
@@ -81,6 +89,7 @@ class MyApp extends StatelessWidget {
   final TrackLocationUseCase trackLocationUseCase;
   final ToggleTrackingUseCase toggleTrackingUseCase;
   final LocationService locationService;
+  final bool isTracking;
 
   const MyApp({
     super.key,
@@ -89,6 +98,7 @@ class MyApp extends StatelessWidget {
     required this.trackLocationUseCase,
     required this.toggleTrackingUseCase,
     required this.locationService,
+    required this.isTracking,
   });
 
   @override
@@ -100,6 +110,7 @@ class MyApp extends StatelessWidget {
         trackLocationUseCase: trackLocationUseCase,
         toggleTrackingUseCase: toggleTrackingUseCase,
         locationService: locationService,
+        initialTrackingStatus: isTracking ? TrackingStatus.tracking : TrackingStatus.stopped,
       ),
       child: MaterialApp(
         title: 'OnTrack',

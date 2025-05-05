@@ -32,13 +32,13 @@ class LocationServiceImpl implements LocationService {
       locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 10, //TODO: Sabitlere eklenebilir.
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
+        foregroundNotificationConfig: ForegroundNotificationConfig(
           notificationText: "Konumunuz arka planda güncelleniyor",
           notificationTitle: "Konum Servisi Aktif",
           enableWakeLock: true,
           notificationIcon: AndroidResource(
-            name: 'ic_stat_location',
-            defType: 'drawable',
+            name: 'ic_launcher',
+            defType: 'mipmap',
           ),
         ),
       ),

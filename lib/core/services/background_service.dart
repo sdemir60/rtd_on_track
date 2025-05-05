@@ -1,10 +1,19 @@
 import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:latlong2/latlong.dart';
 import '../constants/app_constants.dart';
 import '../../domain/usecases/track_location_usecase.dart';
 import 'location_service.dart';
 import '../utils/logger_util.dart';
 import '../utils/notification_helper/notification_helper.dart';
+import 'preferences_service.dart';
+
+TrackLocationUseCase? _trackLocationUseCase;
+LocationService? _globalLocationService;
+StreamSubscription<LatLng>? _locationSubscription;
+ReceivePort? _receivePort;
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
@@ -22,7 +31,17 @@ void onStart(ServiceInstance service) async {
     }
 
     service.on('stopService').listen((event) {
+      _stopLocationTracking();
       service.stopSelf();
+    });
+
+    service.on('startLocationTracking').listen((event) {
+      if (event != null) {
+        if (_globalLocationService == null) {
+          _globalLocationService = LocationServiceImpl();
+        }
+        _startLocationTracking();
+      }
     });
 
     if (service is AndroidServiceInstance) {
@@ -37,16 +56,57 @@ void onStart(ServiceInstance service) async {
     service.invoke('update', {
       'isRunning': true,
     });
+    
+    final preferencesService = PreferencesService();
+    final isTracking = await preferencesService.getTrackingStatus();
+    if (isTracking) {
+      logger.info("Önceki takip durumu aktif, konum takibi yeniden başlatılıyor");
+    }
+    
     logger.info("Arka plan servisi başarıyla başlatıldı (onStart sonu)");
   } catch (e, stackTrace) {
     logger.error("Arka plan servisi çalıştırma hatası", e, stackTrace);
   }
 }
 
+@pragma('vm:entry-point')
+void _startLocationTracking() {
+  logger.info("Konum takibi başlatılıyor");
+  
+  if (_globalLocationService == null) {
+    _globalLocationService = LocationServiceImpl();
+  }
+  
+  _locationSubscription?.cancel();
+  _locationSubscription = _globalLocationService!.getLocationStream().listen((position) async {
+    try {
+      final SendPort? sendPort = IsolateNameServer.lookupPortByName('location_tracking_port');
+      if (sendPort != null) {
+        sendPort.send({
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        });
+      }
+      
+      logger.info("Konum alındı: $position");
+    } catch (e) {
+      logger.error("Konum takibi hatası", e);
+    }
+  });
+}
+
+@pragma('vm:entry-point')
+void _stopLocationTracking() {
+  logger.info("Konum takibi durduruluyor");
+  _locationSubscription?.cancel();
+  _locationSubscription = null;
+}
+
 abstract class BackgroundService {
   Future<void> initializeService(TrackLocationUseCase trackLocationUseCase);
 
-  Future<void> startService();
+  Future<void> startService(TrackLocationUseCase trackLocationUseCase);
 
   Future<void> stopService();
 
@@ -56,13 +116,18 @@ abstract class BackgroundService {
 class BackgroundServiceImpl implements BackgroundService {
   final FlutterBackgroundService _service = FlutterBackgroundService();
   final LocationService _locationService;
+  final PreferencesService _preferencesService = PreferencesService();
+  TrackLocationUseCase? _trackLocationUseCase;
 
-  BackgroundServiceImpl(this._locationService);
+  BackgroundServiceImpl(this._locationService) {
+    _globalLocationService = this._locationService;
+  }
 
   @override
-  Future<void> initializeService(
-      TrackLocationUseCase trackLocationUseCase) async {
+  Future<void> initializeService(TrackLocationUseCase trackLocationUseCase) async {
     try {
+      _trackLocationUseCase = trackLocationUseCase;
+      
       await NotificationHelper.initialize();
 
       await _service.configure(
@@ -83,50 +148,90 @@ class BackgroundServiceImpl implements BackgroundService {
           },
         ),
       );
-
-      logger.info("Konum dinlemesi başlatıldı");
-      final locationStream = _locationService.getLocationStream();
-      bool firstPositionLogged = false;
-      locationStream.listen((position) async {
-        if (!firstPositionLogged) {
-          logger.info("İlk konum alındı: $position");
-          firstPositionLogged = true;
-        }
-        try {
-          await trackLocationUseCase(position);
-        } catch (e) {
-          logger.error("Konum takibi hatası", e);
-        }
-      });
+      
+      final isTracking = await _preferencesService.getTrackingStatus();
+      if (isTracking) {
+        logger.info("Uygulama başlatıldı ve takip durumu aktif, servis başlatılıyor");
+        await startService(trackLocationUseCase);
+      }
     } catch (e, stackTrace) {
       logger.error("Arka plan servisi başlatma hatası", e, stackTrace);
     }
   }
 
   @override
-  Future<void> startService() async {
+  Future<void> startService(TrackLocationUseCase trackLocationUseCase) async {
     logger.info("Arka plan servisi başlatılıyor (startService)");
     try {
+      await _preferencesService.saveTrackingStatus(true);
+      
+      _receivePort = ReceivePort();
+      IsolateNameServer.registerPortWithName(
+        _receivePort!.sendPort, 
+        'location_tracking_port'
+      );
+      
+      _receivePort!.listen((message) {
+        if (message is Map<String, dynamic>) {
+          final latitude = message['latitude'] as double;
+          final longitude = message['longitude'] as double;
+          final position = LatLng(latitude, longitude);
+          
+          trackLocationUseCase(position);
+        }
+      });
+      
       final isRunning = await _service.isRunning();
       if (isRunning) {
-        logger.info("Servis zaten çalışıyor, yeniden başlatmaya gerek yok.");
+        logger.info("Servis zaten çalışıyor, konum takibi başlatılıyor");
+        _service.invoke('startLocationTracking', {});
         return;
       }
 
       await _service.startService();
+      
+      _service.invoke('startLocationTracking', {});
+      
+      _startForegroundTracking(trackLocationUseCase);
+      
       logger.info("Arka plan servisi başarıyla başlatıldı");
     } catch (e, stackTrace) {
       logger.error("Servis başlatma hatası", e, stackTrace);
       throw Exception("Arka plan servisi başlatılamadı: $e");
     }
   }
+  
+  StreamSubscription<LatLng>? _foregroundLocationSubscription;
+  
+  void _startForegroundTracking(TrackLocationUseCase trackLocationUseCase) {
+    _foregroundLocationSubscription?.cancel();
+    _foregroundLocationSubscription = _locationService?.getLocationStream().listen((position) async {
+      try {
+        await trackLocationUseCase(position);
+      } catch (e) {
+        logger.error("Ön planda konum takibi hatası", e);
+      }
+    });
+  }
+  
+  void _stopForegroundTracking() {
+    _foregroundLocationSubscription?.cancel();
+    _foregroundLocationSubscription = null;
+  }
 
   @override
   Future<void> stopService() async {
     logger.info("Arka plan servisi durduruluyor (stopService)");
     try {
+      await _preferencesService.saveTrackingStatus(false);
+      
+      IsolateNameServer.removePortNameMapping('location_tracking_port');
+      _receivePort?.close();
+      _receivePort = null;
+      
+      _stopForegroundTracking();
+      
       _service.invoke('stopService');
-      // TODO: Mantıkla bir yapı mı tekrar gözden geçirelim.
       await Future.delayed(const Duration(milliseconds: 500));
     } catch (e) {
       logger.error("Servis durdurma hatası", e);

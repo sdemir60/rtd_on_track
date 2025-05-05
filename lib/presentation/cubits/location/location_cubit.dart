@@ -8,6 +8,8 @@ import '../../../domain/usecases/track_location_usecase.dart';
 import '../../../domain/usecases/toggle_tracking_usecase.dart';
 import '../../../core/services/location_service.dart';
 import '../../../domain/entities/location_entity.dart';
+import '../../../core/services/preferences_service.dart';
+import '../../../core/utils/logger_util.dart';
 
 class LocationCubit extends Cubit<LocationState> {
   final GetLocationsUseCase _getLocationsUseCase;
@@ -15,6 +17,7 @@ class LocationCubit extends Cubit<LocationState> {
   final TrackLocationUseCase _trackLocationUseCase;
   final ToggleTrackingUseCase _toggleTrackingUseCase;
   final LocationService _locationService;
+  final PreferencesService _preferencesService = PreferencesService();
 
   StreamSubscription<LatLng>? _locationSubscription;
 
@@ -24,12 +27,17 @@ class LocationCubit extends Cubit<LocationState> {
     required TrackLocationUseCase trackLocationUseCase,
     required ToggleTrackingUseCase toggleTrackingUseCase,
     required LocationService locationService,
+    TrackingStatus initialTrackingStatus = TrackingStatus.stopped,
   })  : _getLocationsUseCase = getLocationsUseCase,
         _resetLocationsUseCase = resetLocationsUseCase,
         _trackLocationUseCase = trackLocationUseCase,
         _toggleTrackingUseCase = toggleTrackingUseCase,
         _locationService = locationService,
-        super(const LocationState());
+        super(LocationState(trackingStatus: initialTrackingStatus)) {
+    if (initialTrackingStatus == TrackingStatus.tracking) {
+      _startLocationTracking();
+    }
+  }
 
   Future<void> loadLocations() async {
     emit(state.copyWith(status: LocationStatus.loading));
@@ -70,6 +78,8 @@ class LocationCubit extends Cubit<LocationState> {
           _stopLocationTracking();
         }
 
+        _preferencesService.saveTrackingStatus(isTracking);
+
         emit(state.copyWith(
           status: LocationStatus.success,
           trackingStatus: newTrackingStatus,
@@ -106,6 +116,7 @@ class LocationCubit extends Cubit<LocationState> {
   }
 
   void _startLocationTracking() {
+    logger.info("Konum takibi başlatılıyor (LocationCubit)");
     _locationSubscription?.cancel();
     _locationSubscription =
         _locationService.getLocationStream().listen((position) async {
@@ -133,6 +144,7 @@ class LocationCubit extends Cubit<LocationState> {
   }
 
   void _stopLocationTracking() {
+    logger.info("Konum takibi durduruluyor (LocationCubit)");
     _locationSubscription?.cancel();
     _locationSubscription = null;
   }
