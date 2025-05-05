@@ -19,7 +19,7 @@ import 'presentation/pages/map_page.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     await NotificationHelper.initialize();
 
     runApp(const MaterialApp(
@@ -50,9 +50,10 @@ void main() async {
     final getLocationsUseCase = GetLocationsUseCase(locationRepository);
     final resetLocationsUseCase = ResetLocationsUseCase(locationRepository);
     final trackLocationUseCase = TrackLocationUseCase(locationRepository);
-    
+
     final backgroundService = BackgroundServiceImpl(locationService);
-    final toggleTrackingUseCase = ToggleTrackingUseCase(backgroundService, trackLocationUseCase);
+    final toggleTrackingUseCase =
+        ToggleTrackingUseCase(backgroundService, trackLocationUseCase);
 
     try {
       await backgroundService.initializeService(trackLocationUseCase);
@@ -110,7 +111,8 @@ class MyApp extends StatelessWidget {
         trackLocationUseCase: trackLocationUseCase,
         toggleTrackingUseCase: toggleTrackingUseCase,
         locationService: locationService,
-        initialTrackingStatus: isTracking ? TrackingStatus.tracking : TrackingStatus.stopped,
+        initialTrackingStatus:
+            isTracking ? TrackingStatus.tracking : TrackingStatus.stopped,
       ),
       child: MaterialApp(
         title: 'OnTrack',
