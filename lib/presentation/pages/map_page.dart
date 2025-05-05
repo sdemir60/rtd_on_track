@@ -156,7 +156,19 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OnTrack'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'OnTrack',
+              style: TextStyle(
+                fontSize: 27,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 3,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
       ),
       body: BlocConsumer<LocationCubit, LocationState>(

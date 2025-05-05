@@ -27,6 +27,7 @@ dependencies:
   logger: ^2.5.0
   shared_preferences: ^2.2.3
   flutter_local_notifications: ^18.0.1
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -37,4 +38,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icons/
 
