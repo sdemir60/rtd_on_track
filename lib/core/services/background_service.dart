@@ -86,7 +86,12 @@ void _startLocationTracking() async {
   }
 
   final locationLocalDataSource = LocationLocalDataSourceImpl();
-  await locationLocalDataSource.initialize();
+  try {
+    await locationLocalDataSource.initialize();
+    logger.info("Veritabanı başarıyla başlatıldı");
+  } catch (e, stackTrace) {
+    logger.error("Veritabanı başlatma hatası, devam ediliyor", e, stackTrace);
+  }
 
   final geocodingService = GeocodingServiceImpl();
 

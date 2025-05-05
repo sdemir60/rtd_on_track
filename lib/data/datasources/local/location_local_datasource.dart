@@ -14,8 +14,16 @@ abstract class LocationLocalDataSource {
 }
 
 class LocationLocalDataSourceImpl implements LocationLocalDataSource {
+  static LocationLocalDataSourceImpl? _instance;
   Isar? _isar;
   bool _isInitialized = false;
+
+  factory LocationLocalDataSourceImpl() {
+    _instance ??= LocationLocalDataSourceImpl._internal();
+    return _instance!;
+  }
+
+  LocationLocalDataSourceImpl._internal();
 
   @override
   Future<void> initialize() async {
@@ -23,6 +31,15 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
       if (!_isInitialized) {
         logger.info("Veritabanı başlatılıyor...");
         final dir = await getApplicationDocumentsDirectory();
+
+        if (Isar.instanceNames.isNotEmpty) {
+          _isar = Isar.getInstance();
+          if (_isar != null) {
+            _isInitialized = true;
+            logger.info("Veritabanı zaten açık, mevcut örnek kullanılıyor.");
+            return;
+          }
+        }
 
         _isar = await Isar.open(
           [LocationModelSchema],
@@ -34,8 +51,13 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
       }
     } catch (e, stackTrace) {
       logger.error("Veritabanı başlatma hatası", e, stackTrace);
-      //TODO: Hata olsa da başlatmış saymak ne kadar doğru tekrar gözden geçir.
-      _isInitialized = true;
+      if (Isar.instanceNames.isNotEmpty) {
+        _isar = Isar.getInstance();
+        if (_isar != null) {
+          _isInitialized = true;
+          logger.info("Hata sonrası mevcut veritabanı örneği kullanılıyor.");
+        }
+      }
     }
   }
 
