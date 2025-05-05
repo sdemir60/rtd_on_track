@@ -76,9 +76,14 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   void _toggleTracking() {
     try {
-      context.read<LocationCubit>().toggleTracking();
+      _requestPermissions().then((_) {
+        context.read<LocationCubit>().toggleTracking();
+      });
     } catch (e) {
       logger.error("Takip durumu değiştirme hatası", e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Takip durumu değiştirilemedi: $e")),
+      );
     }
   }
 
@@ -100,6 +105,9 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
                 context.read<LocationCubit>().resetLocations();
               } catch (e) {
                 logger.error("Konumları sıfırlama hatası", e);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Konumlar sıfırlanamadı: $e")),
+                );
               }
             },
             child: const Text('Sıfırla'),
@@ -129,14 +137,6 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('OnTrack'),
@@ -156,33 +156,6 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
           }
         },
         builder: (context, state) {
-          if (state.status == LocationStatus.initial) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state.locations.isEmpty && state.currentPosition == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Konum verisi bulunamadı.'),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _toggleTracking,
-                    child: Text(state.trackingStatus == TrackingStatus.tracking
-                        ? 'Takibi Durdur'
-                        : 'Takibi Başlat'),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _requestPermissions,
-                    child: const Text('İzinleri Kontrol Et'),
-                  ),
-                ],
-              ),
-            );
-          }
-
           return Stack(
             children: [
               MapWidget(
@@ -197,11 +170,20 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
                 onToggleTracking: _toggleTracking,
                 onResetLocations: _resetLocations,
               ),
-              if (state.status == LocationStatus.loading)
+              if (_isLoading ||
+                  state.status == LocationStatus.loading ||
+                  state.status == LocationStatus.initial)
                 const Positioned(
                   top: 10,
                   right: 10,
-                  child: CircularProgressIndicator(),
+                  child: Card(
+                    elevation: 4,
+                    shape: CircleBorder(),
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(strokeWidth: 3),
+                    ),
+                  ),
                 ),
             ],
           );
