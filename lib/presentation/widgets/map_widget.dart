@@ -68,6 +68,18 @@ class _MapWidgetState extends State<MapWidget> {
             tooltip: 'Tüm Markerları Göster',
             onPressed: _fitAllMarkers,
           ),
+          const SizedBox(height: 8),
+          _buildControlButton(
+            icon: Icons.zoom_in,
+            tooltip: 'Yakınlaştır',
+            onPressed: _zoomIn,
+          ),
+          const SizedBox(height: 8),
+          _buildControlButton(
+            icon: Icons.zoom_out,
+            tooltip: 'Uzaklaştır',
+            onPressed: _zoomOut,
+          ),
         ],
       ),
     );
@@ -165,6 +177,34 @@ class _MapWidgetState extends State<MapWidget> {
       logger.error("Markerları sığdırma hatası", e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Markerlar sığdırılamadı: $e')),
+      );
+    }
+  }
+
+  void _zoomIn() {
+    try {
+      final currentZoom = _mapController.camera.zoom;
+      final newZoom =
+          math.min(currentZoom + 1.0, 18.0); // Maximum zoom level is 18
+      _mapController.move(_mapController.camera.center, newZoom);
+    } catch (e) {
+      logger.error("Yakınlaştırma hatası", e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Yakınlaştırma yapılamadı: $e')),
+      );
+    }
+  }
+
+  void _zoomOut() {
+    try {
+      final currentZoom = _mapController.camera.zoom;
+      final newZoom =
+          math.max(currentZoom - 1.0, 1.0); // Minimum zoom level is 1
+      _mapController.move(_mapController.camera.center, newZoom);
+    } catch (e) {
+      logger.error("Uzaklaştırma hatası", e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Uzaklaştırma yapılamadı: $e')),
       );
     }
   }
