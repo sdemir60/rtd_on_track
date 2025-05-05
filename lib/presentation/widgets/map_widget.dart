@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/constants/map_constants.dart';
 import '../../../core/utils/logger_util.dart';
+import '../cubits/location/location_cubit.dart';
+import '../cubits/location/location_state.dart';
 
-class MapWidget extends StatelessWidget {
+class MapWidget extends StatefulWidget {
   final List<LocationEntity> locations;
   final LatLng? currentPosition;
   final Function(LocationEntity) onLocationSelected;
@@ -19,14 +22,37 @@ class MapWidget extends StatelessWidget {
   });
 
   @override
+  State<MapWidget> createState() => _MapWidgetState();
+}
+
+class _MapWidgetState extends State<MapWidget> {
+  final MapController _mapController = MapController();
+
+  @override
   Widget build(BuildContext context) {
+    return BlocListener<LocationCubit, LocationState>(
+      listenWhen: (previous, current) =>
+          current.currentPosition != previous.currentPosition &&
+          current.currentPosition != null,
+      listener: (context, state) {
+        if (state.currentPosition != null) {
+          _mapController.move(
+              state.currentPosition!, _mapController.camera.zoom);
+        }
+      },
+      child: _buildMap(),
+    );
+  }
+
+  Widget _buildMap() {
     try {
-      final center = currentPosition ??
-          (locations.isNotEmpty
-              ? locations.last.position
+      final center = widget.currentPosition ??
+          (widget.locations.isNotEmpty
+              ? widget.locations.last.position
               : MapConstants.defaultCenter);
 
       return FlutterMap(
+        mapController: _mapController,
         options: MapOptions(
           initialCenter: center,
           initialZoom: MapConstants.defaultZoom,
@@ -57,13 +83,13 @@ class MapWidget extends StatelessWidget {
               ),
             ),
           ),
-          if (currentPosition != null)
+          if (widget.currentPosition != null)
             MarkerLayer(
               markers: [
                 Marker(
                   width: 40.0,
                   height: 40.0,
-                  point: currentPosition!,
+                  point: widget.currentPosition!,
                   child: const Icon(
                     Icons.my_location,
                     color: Colors.blue,
@@ -94,13 +120,13 @@ class MapWidget extends StatelessWidget {
 
   List<Marker> _buildMarkers() {
     try {
-      return locations.map((location) {
+      return widget.locations.map((location) {
         return Marker(
           width: 40.0,
           height: 40.0,
           point: location.position,
           child: GestureDetector(
-            onTap: () => onLocationSelected(location),
+            onTap: () => widget.onLocationSelected(location),
             child: const Icon(
               Icons.location_on,
               color: Colors.red,
@@ -113,5 +139,11 @@ class MapWidget extends StatelessWidget {
       logger.error("Marker oluşturma hatası", e);
       return [];
     }
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
   }
 }
