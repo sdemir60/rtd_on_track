@@ -309,6 +309,8 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
                                                 .clearSelectedLocation();
                                           },
                                         );
+                                      } else {
+                                        return const SizedBox.shrink();
                                       }
                                     },
                                   ),
