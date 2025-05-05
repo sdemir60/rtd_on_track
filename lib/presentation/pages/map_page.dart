@@ -165,10 +165,14 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
                   context.read<LocationCubit>().selectLocation(location);
                 },
               ),
-              ControlButtons(
-                trackingStatus: state.trackingStatus,
-                onToggleTracking: _toggleTracking,
-                onResetLocations: _resetLocations,
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: ControlButtons(
+                  trackingStatus: state.trackingStatus,
+                  onToggleTracking: _toggleTracking,
+                  onResetLocations: _resetLocations,
+                ),
               ),
               if (_isLoading ||
                   state.status == LocationStatus.loading ||

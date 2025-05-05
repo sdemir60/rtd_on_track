@@ -8,6 +8,7 @@ import '../../../core/constants/map_constants.dart';
 import '../../../core/utils/logger_util.dart';
 import '../cubits/location/location_cubit.dart';
 import '../cubits/location/location_state.dart';
+import 'dart:math' as math;
 
 class MapWidget extends StatefulWidget {
   final List<LocationEntity> locations;
@@ -40,8 +41,132 @@ class _MapWidgetState extends State<MapWidget> {
               state.currentPosition!, _mapController.camera.zoom);
         }
       },
-      child: _buildMap(),
+      child: Stack(
+        children: [
+          _buildMap(),
+          _buildMapControls(),
+        ],
+      ),
     );
+  }
+
+  Widget _buildMapControls() {
+    return Positioned(
+      right: 16,
+      top: 16,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildControlButton(
+            icon: Icons.my_location,
+            tooltip: 'Konumuma Git',
+            onPressed: _goToCurrentLocation,
+          ),
+          const SizedBox(height: 8),
+          _buildControlButton(
+            icon: Icons.fit_screen,
+            tooltip: 'Tüm Markerları Göster',
+            onPressed: _fitAllMarkers,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          child: Tooltip(
+            message: tooltip,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(icon, size: 24),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _goToCurrentLocation() {
+    try {
+      final currentPosition = widget.currentPosition;
+      if (currentPosition != null) {
+        _mapController.move(currentPosition, MapConstants.defaultZoom);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mevcut konum bulunamadı')),
+        );
+      }
+    } catch (e) {
+      logger.error("Konuma gitme hatası", e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Konuma gidilemedi: $e')),
+      );
+    }
+  }
+
+  void _fitAllMarkers() {
+    try {
+      if (widget.locations.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gösterilecek konum bulunamadı')),
+        );
+        return;
+      }
+
+      double minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0;
+
+      for (final location in widget.locations) {
+        minLat = math.min(minLat, location.position.latitude);
+        maxLat = math.max(maxLat, location.position.latitude);
+        minLng = math.min(minLng, location.position.longitude);
+        maxLng = math.max(maxLng, location.position.longitude);
+      }
+
+      if (widget.currentPosition != null) {
+        minLat = math.min(minLat, widget.currentPosition!.latitude);
+        maxLat = math.max(maxLat, widget.currentPosition!.latitude);
+        minLng = math.min(minLng, widget.currentPosition!.longitude);
+        maxLng = math.max(maxLng, widget.currentPosition!.longitude);
+      }
+
+      final paddingFactor = 0.1;
+      final latDiff = (maxLat - minLat) * paddingFactor;
+      final lngDiff = (maxLng - minLng) * paddingFactor;
+
+      final centerLat = (minLat + maxLat) / 2;
+      final centerLng = (minLng + maxLng) / 2;
+
+      final latZoom = _calculateZoomLevel(maxLat - minLat + 2 * latDiff);
+      final lngZoom = _calculateZoomLevel(maxLng - minLng + 2 * lngDiff);
+      final zoom = math.min(latZoom, lngZoom);
+
+      _mapController.move(LatLng(centerLat, centerLng), zoom);
+    } catch (e) {
+      logger.error("Markerları sığdırma hatası", e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Markerlar sığdırılamadı: $e')),
+      );
+    }
   }
 
   Widget _buildMap() {
@@ -139,6 +264,10 @@ class _MapWidgetState extends State<MapWidget> {
       logger.error("Marker oluşturma hatası", e);
       return [];
     }
+  }
+
+  double _calculateZoomLevel(double delta) {
+    return math.max(1, math.min(18, math.log(360 / delta) / math.log(2) + 1));
   }
 
   @override
