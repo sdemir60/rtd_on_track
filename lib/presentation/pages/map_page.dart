@@ -35,7 +35,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
         _isLoading = false;
       });
     } catch (e) {
-      logger.error("Uygulama başlatma hatası", e);
+      logger.error("Uygulama baslatma hatasi", e);
       setState(() {
         _isLoading = false;
       });
@@ -50,7 +50,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    logger.info("Uygulama yaşam döngüsü değişti: $state");
+    logger.info("Uygulama yasam dongusu degisti: $state");
     if (state == AppLifecycleState.resumed) {
       _loadLocations();
     }
@@ -58,14 +58,25 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   Future<void> _requestPermissions() async {
     try {
-      final hasLocationPermission =
-          await PermissionUtils.requestLocationPermission();
+      logger.info("Izinler isteniyor");
+      
+      final hasNotificationPermission = await PermissionUtils.requestNotificationPermission();
+      logger.info("Bildirim izni durumu: $hasNotificationPermission");
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final hasLocationPermission = await PermissionUtils.requestLocationPermission();
+      logger.info("Konum izni durumu: $hasLocationPermission");
 
+      await Future.delayed(const Duration(milliseconds: 500));
+      
       if (hasLocationPermission) {
-        await PermissionUtils.requestBackgroundLocationPermission();
+        final hasBackgroundLocationPermission = 
+            await PermissionUtils.requestBackgroundLocationPermission();
+        logger.info("Arka plan konum izni durumu: $hasBackgroundLocationPermission");
       }
     } catch (e) {
-      logger.error("İzin isteme hatası", e);
+      logger.error("Izin isteme hatasi", e);
     }
   }
 
@@ -73,7 +84,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     try {
       context.read<LocationCubit>().loadLocations();
     } catch (e) {
-      logger.error("Konum yükleme hatası", e);
+      logger.error("Konum yukleme hatasi", e);
     }
   }
 
@@ -82,9 +93,9 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
       await _requestPermissions();
       context.read<LocationCubit>().toggleTracking();
     } catch (e) {
-      logger.error("Takip durumu değiştirme hatası", e);
+      logger.error("Takip durumu degistirme hatasi", e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Takip durumu değiştirilemedi: $e")),
+        SnackBar(content: Text("Takip durumu degistirilemedi: $e")),
       );
     }
   }
@@ -93,12 +104,12 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konumları Sıfırla'),
-        content: const Text('Tüm konum geçmişi silinecek. Emin misiniz?'),
+        title: const Text('Konumlari Sifirla'),
+        content: const Text('Tum konum gecmisi silinecek. Emin misiniz?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('İptal'),
+            child: const Text('Iptal'),
           ),
           TextButton(
             onPressed: () {
@@ -106,13 +117,13 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
               try {
                 context.read<LocationCubit>().resetLocations();
               } catch (e) {
-                logger.error("Konumları sıfırlama hatası", e);
+                logger.error("Konumlari sifirlama hatasi", e);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Konumlar sıfırlanamadı: $e")),
+                  SnackBar(content: Text("Konumlar sifirlanamadi: $e")),
                 );
               }
             },
-            child: const Text('Sıfırla'),
+            child: const Text('Sifirla'),
           ),
         ],
       ),

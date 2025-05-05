@@ -1,64 +1,88 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../constants/app_constants.dart';
+import '../permission_utils.dart';
+import '../logger_util.dart';
 
 class NotificationHelper {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+        android: initializationSettingsAndroid,
+      );
 
-    await flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-    );
+      await flutterLocalNotificationsPlugin.initialize(
+        initializationSettings,
+      );
 
-    await createNotificationChannel();
+      await createNotificationChannel();
+      logger.info("Bildirim sistemi basariyla baslatildi");
+    } catch (e) {
+      logger.error("Bildirim sistemi baslatilirken hata olustu", e);
+    }
   }
 
   static Future<void> createNotificationChannel() async {
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      AppConstants.locationChannelId,
-      AppConstants.locationChannelName,
-      importance: Importance.high,
-      playSound: false,
-      enableVibration: false,
-      description: 'Konum takip servisi bildirimleri',
-    );
+    try {
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        AppConstants.locationChannelId,
+        AppConstants.locationChannelName,
+        importance: Importance.high,
+        playSound: false,
+        enableVibration: false,
+        description: 'Konum takip servisi bildirimleri',
+      );
 
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+
+      logger.info("Bildirim kanali basariyla olusturuldu");
+    } catch (e) {
+      logger.error("Bildirim kanali olusturulurken hata olustu", e);
+    }
   }
 
   static Future<void> showForegroundServiceNotification() async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      AppConstants.locationChannelId,
-      AppConstants.locationChannelName,
-      channelDescription: 'Konum takip servisi bildirimleri',
-      importance: Importance.high,
-      priority: Priority.high,
-      ongoing: true,
-      autoCancel: false,
-      playSound: false,
-      enableVibration: false,
-    );
+    try {
+      bool hasPermission = await PermissionUtils.checkNotificationPermission();
+      if (!hasPermission) {
+        logger.warning("Bildirim izni verilmemis, bildirim gosterilemiyor");
+      }
 
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        AppConstants.locationChannelId,
+        AppConstants.locationChannelName,
+        channelDescription: 'Konum takip servisi bildirimleri',
+        importance: Importance.high,
+        priority: Priority.high,
+        ongoing: true,
+        autoCancel: false,
+        playSound: false,
+        enableVibration: false,
+      );
 
-    await flutterLocalNotificationsPlugin.show(
-      888,
-      AppConstants.locationNotificationTitle,
-      AppConstants.locationNotificationText,
-      platformChannelSpecifics,
-    );
+      const NotificationDetails platformChannelSpecifics =
+          NotificationDetails(android: androidPlatformChannelSpecifics);
+
+      await flutterLocalNotificationsPlugin.show(
+        888,
+        AppConstants.locationNotificationTitle,
+        AppConstants.locationNotificationText,
+        platformChannelSpecifics,
+      );
+
+      logger.info("On plan servisi bildirimi gosterildi");
+    } catch (e) {
+      logger.error("Bildirim gosterilirken hata olustu", e);
+    }
   }
 }
