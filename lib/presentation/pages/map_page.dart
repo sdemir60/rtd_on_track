@@ -212,7 +212,7 @@ class _BottomSheetWithControls extends StatefulWidget {
 }
 
 class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
-  double _sheetExtent = 0.15;
+  double _sheetExtent = 0.03;
   final DraggableScrollableController _controller =
       DraggableScrollableController();
 
@@ -230,11 +230,11 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
           children: [
             DraggableScrollableSheet(
               controller: _controller,
-              initialChildSize: 0.15,
-              minChildSize: 0.10,
+              initialChildSize: 0.03,
+              minChildSize: 0.03,
               maxChildSize: 0.5,
               snap: true,
-              snapSizes: const [0.15, 0.3],
+              snapSizes: const [0.03, 0.3],
               builder: (context, scrollController) {
                 return BlocConsumer<LocationCubit, LocationState>(
                   listenWhen: (previous, current) =>
@@ -247,9 +247,9 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
                         curve: Curves.easeInOut,
                       );
                     } else if (state.selectedLocation == null &&
-                        _sheetExtent > 0.15) {
+                        _sheetExtent > 0.03) {
                       _controller.animateTo(
-                        0.15,
+                        0.03,
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOut,
                       );
@@ -282,7 +282,7 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
                         child: Column(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Center(
                                 child: Container(
                                   width: 40,
@@ -309,14 +309,6 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
                                                 .clearSelectedLocation();
                                           },
                                         );
-                                      } else {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Text(
-                                            'Konum detayları için haritadaki bir işaretleyiciye tıklayın.',
-                                            style: TextStyle(fontSize: 16),
-                                          ),
-                                        );
                                       }
                                     },
                                   ),
@@ -333,7 +325,7 @@ class _BottomSheetWithControlsState extends State<_BottomSheetWithControls> {
             ),
             Positioned(
               right: 16,
-              bottom: constraints.maxHeight * _sheetExtent + 8,
+              bottom: constraints.maxHeight * _sheetExtent + 15,
               child: ControlButtons(
                 trackingStatus: widget.trackingStatus,
                 onToggleTracking: widget.onToggleTracking,
