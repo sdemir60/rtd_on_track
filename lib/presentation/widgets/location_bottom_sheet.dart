@@ -18,7 +18,7 @@ class LocationBottomSheet extends StatelessWidget {
     final formattedDate = dateFormat.format(location.timestamp);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -45,9 +45,40 @@ class LocationBottomSheet extends StatelessWidget {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    IconData iconData;
+    Color iconColor;
+
+    switch (label) {
+      case 'Tarih':
+        iconData = Icons.calendar_today;
+        iconColor = Colors.blue;
+        break;
+      case 'Enlem':
+        iconData = Icons.location_on;
+        iconColor = Colors.red;
+        break;
+      case 'Boylam':
+        iconData = Icons.explore;
+        iconColor = Colors.green;
+        break;
+      case 'Adres':
+        iconData = Icons.home;
+        iconColor = Colors.orange;
+        break;
+      default:
+        iconData = Icons.info;
+        iconColor = Colors.grey;
+    }
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        Icon(
+          iconData,
+          size: 16,
+          color: iconColor,
+        ),
+        const SizedBox(width: 4),
         SizedBox(
           width: 80,
           child: Text(
