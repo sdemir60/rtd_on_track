@@ -2,71 +2,33 @@ import 'package:dartz/dartz.dart';
 import '../entities/location_entity.dart';
 import '../repositories/location_repository.dart';
 import '../../core/errors/failures.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/location_utils.dart';
 import '../../core/utils/logger_utils.dart';
 import 'package:latlong2/latlong.dart';
 
 class TrackLocationUseCase {
   final LocationRepository repository;
-  LocationEntity? _lastSavedLocation;
 
   TrackLocationUseCase(this.repository);
 
   Future<Either<Failure, LocationEntity?>> call(LatLng currentPosition) async {
     try {
-      if (_lastSavedLocation == null) {
-        final locationsResult = await repository.getLocations();
-        await locationsResult.fold(
-          (failure) => null,
-          (locations) {
-            if (locations.isNotEmpty) {
-              _lastSavedLocation = locations.last;
-              logger.info("Son kaydedilen konum veritabanından alındı: ${_lastSavedLocation!.position}");
-            }
-          }
-        );
-      }
+      logger.info("Yeni konum işleniyor: $currentPosition");
 
-      bool shouldSaveLocation = false;
-      
-      if (_lastSavedLocation == null) {
-        shouldSaveLocation = true;
-        logger.info("İlk konum kaydediliyor");
-      } else {
-        double distance = LocationUtils.calculateDistance(
-          _lastSavedLocation!.position,
-          currentPosition
-        );
-        
-        shouldSaveLocation = distance >= AppConstants.locationDistanceThreshold.toDouble();
-        logger.info("Konum mesafesi: $distance metre, eşik: ${AppConstants.locationDistanceThreshold} metre, kaydedilecek: $shouldSaveLocation");
-      }
+      final addressResult = await repository.getAddressFromCoordinates(
+          currentPosition.latitude, currentPosition.longitude);
 
-      if (shouldSaveLocation) {
-        final addressResult = await repository.getAddressFromCoordinates(
-            currentPosition.latitude, currentPosition.longitude);
+      String? address;
+      addressResult.fold((failure) => address = null, (data) => address = data);
 
-        String? address;
-        addressResult.fold(
-            (failure) => address = null, (data) => address = data);
+      final location = LocationEntity(
+        position: currentPosition,
+        timestamp: DateTime.now(),
+        address: address,
+      );
 
-        final location = LocationEntity(
-          position: currentPosition,
-          timestamp: DateTime.now(),
-          address: address,
-        );
+      final result = await repository.saveLocation(location);
 
-        final result = await repository.saveLocation(location);
-
-        return result.fold((failure) => Left(failure), (savedLocation) {
-          _lastSavedLocation = savedLocation;
-          logger.info("Yeni konum kaydedildi: ${savedLocation.position}");
-          return Right(savedLocation);
-        });
-      }
-
-      return const Right(null);
+      return result;
     } catch (e) {
       logger.error("Konum takibi hatası", e);
       return Left(ServiceFailure(message: e.toString()));

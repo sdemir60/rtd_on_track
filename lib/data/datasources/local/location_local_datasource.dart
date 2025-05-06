@@ -1,7 +1,10 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:latlong2/latlong.dart';
 import '../../models/location_model.dart';
 import '../../../core/utils/logger_utils.dart';
+import '../../../core/utils/location_utils.dart';
+import '../../../core/constants/app_constants.dart';
 
 abstract class LocationLocalDataSource {
   Future<List<LocationModel>> getLocations();
@@ -92,30 +95,26 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
         return location;
       }
 
-      final existingLocations = await _isar!.locationModels
-          .filter()
-          .latitudeEqualTo(location.latitude)
-          .longitudeEqualTo(location.longitude)
-          .findAll();
+      final lastLocation =
+          await _isar!.locationModels.where().sortByTimestampDesc().findFirst();
 
-      bool isDuplicate = false;
-      for (var existing in existingLocations) {
-        final timeDifference =
-            location.timestamp.difference(existing.timestamp).inSeconds.abs();
-        if (timeDifference < 5) {
+      if (lastLocation != null) {
+        final distance = LocationUtils.calculateDistance(
+          LatLng(lastLocation.latitude, lastLocation.longitude),
+          LatLng(location.latitude, location.longitude),
+        );
+
+        if (distance < AppConstants.locationDistanceThreshold) {
           logger.info(
-              "Aynı konumda ve yakın zamanda bir kayıt zaten var, yeni kayıt eklenmeyecek.");
-          isDuplicate = true;
-          return existing;
+              "Yeni konum son kaydedilen konuma çok yakın (${distance.toStringAsFixed(2)}m), kaydedilmeyecek.");
+          return lastLocation;
         }
       }
 
-      if (!isDuplicate) {
-        await _isar!.writeTxn(() async {
-          location.id = await _isar!.locationModels.put(location);
-        });
-        logger.info("Konum başarıyla kaydedildi. ID: ${location.id}");
-      }
+      await _isar!.writeTxn(() async {
+        location.id = await _isar!.locationModels.put(location);
+      });
+      logger.info("Konum başarıyla kaydedildi. ID: ${location.id}");
 
       return location;
     } catch (e, stackTrace) {

@@ -10,6 +10,8 @@ import '../../../core/services/location_service.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/utils/logger_utils.dart';
+import '../../../core/utils/location_utils.dart';
+import '../../../core/constants/app_constants.dart';
 
 class LocationCubit extends Cubit<LocationState> {
   final GetLocationsUseCase _getLocationsUseCase;
@@ -49,11 +51,27 @@ class LocationCubit extends Cubit<LocationState> {
         status: LocationStatus.failure,
         errorMessage: failure.message,
       )),
-      (locations) => emit(state.copyWith(
-        status: LocationStatus.success,
-        locations: locations,
-        clearError: true,
-      )),
+      (locations) {
+        final uniqueLocations = <LocationEntity>[];
+        final seen = <String>{};
+
+        for (var location in locations) {
+          final key =
+              '${location.position.latitude},${location.position.longitude}';
+          if (!seen.contains(key)) {
+            seen.add(key);
+            uniqueLocations.add(location);
+          } else {
+            logger.info('Duplike konum atlandı: $key');
+          }
+        }
+
+        emit(state.copyWith(
+          status: LocationStatus.success,
+          locations: uniqueLocations,
+          clearError: true,
+        ));
+      },
     );
   }
 
@@ -131,15 +149,25 @@ class LocationCubit extends Cubit<LocationState> {
         )),
         (newLocation) {
           if (newLocation != null) {
-            final updatedLocations = List<LocationEntity>.from(state.locations)
-              ..add(newLocation);
+            final currentLocations = List<LocationEntity>.from(state.locations);
 
-            logger.info("Yeni konum eklendi: ${newLocation.position}");
+            final isDuplicate = currentLocations.any((loc) =>
+                LocationUtils.calculateDistance(
+                    loc.position, newLocation.position) <
+                AppConstants.locationDistanceThreshold);
 
-            emit(state.copyWith(
-              locations: updatedLocations,
-              clearError: true,
-            ));
+            if (!isDuplicate) {
+              currentLocations.add(newLocation);
+              logger.info("Yeni konum eklendi: ${newLocation.position}");
+
+              emit(state.copyWith(
+                locations: currentLocations,
+                clearError: true,
+              ));
+            } else {
+              logger.info(
+                  "Bu konum zaten ekli, tekrar eklenmedi: ${newLocation.position}");
+            }
           }
         },
       );

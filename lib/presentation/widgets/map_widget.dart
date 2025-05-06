@@ -314,13 +314,15 @@ class _MapWidgetState extends State<MapWidget> {
       final markers = <Marker>[];
       final state = context.read<LocationCubit>().state;
       final selectedLocation = state.selectedLocation;
+      final locations = widget.locations.toSet().toList();
 
-      for (int i = 0; i < widget.locations.length; i++) {
-        final location = widget.locations[i];
-        final isLastLocation = i == widget.locations.length - 1;
+      for (int i = 0; i < locations.length; i++) {
+        final location = locations[i];
+        final isLastLocation = i == locations.length - 1;
         final isSelected = selectedLocation?.id == location.id;
 
-        final isBlue = isSelected || (isLastLocation && selectedLocation == null);
+        final isBlue =
+            isSelected || (isLastLocation && selectedLocation == null);
 
         markers.add(Marker(
           width: 40.0,
