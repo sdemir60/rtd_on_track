@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:isolate';
+import 'package:flutter/foundation.dart';
 import 'data/datasources/local/location_local_datasource.dart';
 import 'data/repositories/location_repository_impl.dart';
 import 'domain/usecases/get_locations_usecase.dart';
@@ -18,6 +20,23 @@ import 'presentation/pages/map_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    logger.error('Flutter Error', details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.error('PlatformDispatcher Error', error, stack);
+    return true;
+  };
+
+  Isolate.current.addErrorListener(RawReceivePort((pair) {
+    final List<dynamic> errorAndStacktrace = pair;
+    final error = errorAndStacktrace[0];
+    final stack = StackTrace.fromString(errorAndStacktrace[1].toString());
+    logger.error('Isolate Error', error, stack);
+  }).sendPort);
 
   try {
     await NotificationUtils.initialize();
