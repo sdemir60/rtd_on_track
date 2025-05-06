@@ -7,6 +7,7 @@ import '../../../domain/entities/location_entity.dart';
 import '../../../core/constants/map_constants.dart';
 import '../../../core/utils/logger_utils.dart';
 import '../../../core/utils/location_utils.dart';
+import '../../../core/utils/dialog_utils.dart';
 import '../cubits/location/location_cubit.dart';
 import '../cubits/location/location_state.dart';
 import 'dart:math' as math;
@@ -121,23 +122,7 @@ class _MapWidgetState extends State<MapWidget> {
 
   // Helper method to show alerts
   void _showAlert(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Tamam'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+    DialogUtils.showAlert(context, title, message);
   }
 
   void _goToCurrentLocation() {
@@ -196,7 +181,7 @@ class _MapWidgetState extends State<MapWidget> {
   void _fitAllMarkers() {
     try {
       if (widget.locations.isEmpty) {
-        _showAlert('Konum Hatası', 'Gösterilecek konum bulunamadı');
+        _showAlert('Konum Hatası', 'Gösterilecek konum bulunamadı.');
         return;
       }
 

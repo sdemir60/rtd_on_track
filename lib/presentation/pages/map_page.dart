@@ -8,6 +8,7 @@ import '../widgets/location_bottom_sheet.dart';
 import '../widgets/loading_overlay.dart';
 import '../../core/utils/permission_utils.dart';
 import '../../core/utils/logger_utils.dart';
+import '../../core/utils/dialog_utils.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -28,23 +29,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   // Helper method to show alerts
   void _showAlert(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Tamam'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+    DialogUtils.showAlert(context, title, message);
   }
 
   Future<void> _initializeApp() async {

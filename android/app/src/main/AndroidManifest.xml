@@ -13,7 +13,7 @@
     <application
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:label="rtd_on_track">
+        android:label="OnTrack">
 
         <service
             android:name="com.dexterous.flutterlocalnotifications.ForegroundService"
