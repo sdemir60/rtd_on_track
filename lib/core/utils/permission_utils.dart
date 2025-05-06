@@ -1,5 +1,5 @@
 import 'package:permission_handler/permission_handler.dart';
-import '../utils/logger_util.dart';
+import '../utils/logger_utils.dart';
 
 class PermissionUtils {
   static Future<Map<Permission, PermissionStatus>> requestPermissions(

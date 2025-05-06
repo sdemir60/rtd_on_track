@@ -10,8 +10,8 @@ import 'core/services/location_service.dart';
 import 'core/services/background_service.dart';
 import 'core/services/geocoding_service.dart';
 import 'core/services/preferences_service.dart';
-import 'core/utils/logger_util.dart';
-import 'core/utils/notification_helper/notification_helper.dart';
+import 'core/utils/logger_utils.dart';
+import 'core/utils/notification_utils.dart';
 import 'presentation/cubits/location/location_cubit.dart';
 import 'presentation/cubits/location/location_state.dart';
 import 'presentation/pages/map_page.dart';
@@ -20,7 +20,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await NotificationHelper.initialize();
+    await NotificationUtils.initialize();
 
     final locationService = LocationServiceImpl();
     final geocodingService = GeocodingServiceImpl();

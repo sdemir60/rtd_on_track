@@ -1,9 +1,9 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../../constants/app_constants.dart';
-import '../permission_utils.dart';
-import '../logger_util.dart';
+import '../constants/app_constants.dart';
+import 'permission_utils.dart';
+import 'logger_utils.dart';
 
-class NotificationHelper {
+class NotificationUtils {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 

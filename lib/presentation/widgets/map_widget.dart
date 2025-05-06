@@ -5,7 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/constants/map_constants.dart';
-import '../../../core/utils/logger_util.dart';
+import '../../../core/utils/logger_utils.dart';
 import '../cubits/location/location_cubit.dart';
 import '../cubits/location/location_state.dart';
 import 'dart:math' as math;

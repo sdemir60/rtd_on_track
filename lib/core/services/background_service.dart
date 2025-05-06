@@ -6,8 +6,8 @@ import 'package:latlong2/latlong.dart';
 import '../constants/app_constants.dart';
 import '../../domain/usecases/track_location_usecase.dart';
 import 'location_service.dart';
-import '../utils/logger_util.dart';
-import '../utils/notification_helper/notification_helper.dart';
+import '../utils/logger_utils.dart';
+import '../utils/notification_utils.dart';
 import 'preferences_service.dart';
 import 'geocoding_service.dart';
 import '../../data/datasources/local/location_local_datasource.dart';
@@ -22,7 +22,7 @@ ReceivePort? _receivePort;
 void onStart(ServiceInstance service) async {
   logger.info("Arka plan servisi başlatılıyor (onStart)");
   try {
-    await NotificationHelper.initialize();
+    await NotificationUtils.initialize();
 
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -53,7 +53,7 @@ void onStart(ServiceInstance service) async {
         content: AppConstants.locationNotificationText,
       );
 
-      await NotificationHelper.showForegroundServiceNotification();
+      await NotificationUtils.showForegroundServiceNotification();
     }
 
     service.invoke('update', {
@@ -163,7 +163,7 @@ class BackgroundServiceImpl implements BackgroundService {
     try {
       _trackLocationUseCase = trackLocationUseCase;
 
-      await NotificationHelper.initialize();
+      await NotificationUtils.initialize();
 
       await _service.configure(
         androidConfiguration: AndroidConfiguration(

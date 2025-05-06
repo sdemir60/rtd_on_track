@@ -1,7 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../models/location_model.dart';
-import '../../../core/utils/logger_util.dart';
+import '../../../core/utils/logger_utils.dart';
 
 abstract class LocationLocalDataSource {
   Future<List<LocationModel>> getLocations();

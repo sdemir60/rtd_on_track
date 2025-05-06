@@ -1,14 +1,14 @@
 import 'package:logger/logger.dart';
 
-class LoggerUtil {
-  static final LoggerUtil _instance = LoggerUtil._internal();
+class LoggerUtils {
+  static final LoggerUtils _instance = LoggerUtils._internal();
   late final Logger _logger;
 
-  factory LoggerUtil() {
+  factory LoggerUtils() {
     return _instance;
   }
 
-  LoggerUtil._internal() {
+  LoggerUtils._internal() {
     _logger = Logger(
       printer: PrettyPrinter(
         methodCount: 2,
@@ -46,4 +46,4 @@ class LoggerUtil {
   }
 }
 
-final logger = LoggerUtil();
+final logger = LoggerUtils();

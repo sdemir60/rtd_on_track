@@ -9,7 +9,7 @@ import '../../../domain/usecases/toggle_tracking_usecase.dart';
 import '../../../core/services/location_service.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/services/preferences_service.dart';
-import '../../../core/utils/logger_util.dart';
+import '../../../core/utils/logger_utils.dart';
 
 class LocationCubit extends Cubit<LocationState> {
   final GetLocationsUseCase _getLocationsUseCase;

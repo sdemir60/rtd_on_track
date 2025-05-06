@@ -1,7 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import '../utils/location_utils.dart';
-import '../utils/logger_util.dart';
+import '../utils/logger_utils.dart';
 
 abstract class LocationService {
   Future<LatLng?> getCurrentLocation();

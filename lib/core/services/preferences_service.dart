@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/logger_util.dart';
+import '../utils/logger_utils.dart';
 
 class PreferencesService {
   static const String isTrackingKey = 'is_tracking';

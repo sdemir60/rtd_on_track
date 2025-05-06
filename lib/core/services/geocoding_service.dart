@@ -1,5 +1,5 @@
 import 'package:geocoding/geocoding.dart';
-import '../utils/logger_util.dart';
+import '../utils/logger_utils.dart';
 
 abstract class GeocodingService {
   Future<String?> getAddressFromCoordinates(double latitude, double longitude);

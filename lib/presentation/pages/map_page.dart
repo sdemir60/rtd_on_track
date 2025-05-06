@@ -5,9 +5,9 @@ import '../cubits/location/location_state.dart';
 import '../widgets/map_widget.dart';
 import '../widgets/control_buttons.dart';
 import '../widgets/location_bottom_sheet.dart';
-import '../widgets/common/loading_overlay.dart';
+import '../widgets/loading_overlay.dart';
 import '../../core/utils/permission_utils.dart';
-import '../../core/utils/logger_util.dart';
+import '../../core/utils/logger_utils.dart';
 import '../../core/services/preferences_service.dart';
 
 class MapPage extends StatefulWidget {
