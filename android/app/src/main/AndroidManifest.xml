@@ -26,7 +26,12 @@
             android:exported="false"
             android:foregroundServiceType="location"
             android:stopWithTask="false"
-            tools:replace="android:exported" />
+            tools:replace="android:exported">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </service>
 
         <activity
             android:name=".MainActivity"

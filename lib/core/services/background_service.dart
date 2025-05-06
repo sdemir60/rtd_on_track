@@ -22,6 +22,13 @@ ReceivePort? _receivePort;
 void onStart(ServiceInstance service) async {
   logger.info("Arka plan servisi başlatılıyor (onStart)");
   try {
+    if (service is AndroidServiceInstance) {
+      await service.setForegroundNotificationInfo(
+        title: AppConstants.locationNotificationTitle,
+        content: AppConstants.locationNotificationText,
+      );
+    }
+
     await NotificationUtils.initialize();
 
     if (service is AndroidServiceInstance) {
@@ -47,14 +54,7 @@ void onStart(ServiceInstance service) async {
       }
     });
 
-    if (service is AndroidServiceInstance) {
-      await service.setForegroundNotificationInfo(
-        title: AppConstants.locationNotificationTitle,
-        content: AppConstants.locationNotificationText,
-      );
-
-      await NotificationUtils.showForegroundServiceNotification();
-    }
+    await NotificationUtils.showForegroundServiceNotification();
 
     service.invoke('update', {
       'isRunning': true,
@@ -186,6 +186,7 @@ class BackgroundServiceImpl implements BackgroundService {
           initialNotificationTitle: AppConstants.locationNotificationTitle,
           initialNotificationContent: AppConstants.locationNotificationText,
           foregroundServiceNotificationId: 888,
+          autoStartOnBoot: true,
         ),
         iosConfiguration: IosConfiguration(
           autoStart: true,
@@ -233,6 +234,8 @@ class BackgroundServiceImpl implements BackgroundService {
         _service.invoke('startLocationTracking', {});
         return;
       }
+
+      await NotificationUtils.showForegroundServiceNotification();
 
       await _service.startService();
 
