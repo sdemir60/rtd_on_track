@@ -8,7 +8,6 @@ import '../widgets/location_bottom_sheet.dart';
 import '../widgets/loading_overlay.dart';
 import '../../core/utils/permission_utils.dart';
 import '../../core/utils/logger_utils.dart';
-import '../../core/services/preferences_service.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -19,13 +18,33 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   bool _isLoading = true;
-  final PreferencesService _preferencesService = PreferencesService();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeApp();
+  }
+
+  // Helper method to show alerts
+  void _showAlert(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Tamam'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _initializeApp() async {
@@ -36,7 +55,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
         _isLoading = false;
       });
     } catch (e) {
-      logger.error("Uygulama baslatma hatasi", e);
+      logger.error("Uygulama başlatma hatası", e);
       setState(() {
         _isLoading = false;
       });
@@ -51,7 +70,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    logger.info("Uygulama yasam dongusu degisti: $state");
+    logger.info("Uygulama yaşam döngüsü değişti: $state");
     if (state == AppLifecycleState.resumed) {
       _loadLocations();
     }
@@ -59,7 +78,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   Future<void> _requestPermissions() async {
     try {
-      logger.info("Izinler isteniyor");
+      logger.info("İzinler isteniyor");
 
       final hasNotificationPermission =
           await PermissionUtils.requestNotificationPermission();
@@ -80,7 +99,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
             "Arka plan konum izni durumu: $hasBackgroundLocationPermission");
       }
     } catch (e) {
-      logger.error("Izin isteme hatasi", e);
+      logger.error("İzin isteme hatası", e);
     }
   }
 
@@ -88,7 +107,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     try {
       context.read<LocationCubit>().loadLocations();
     } catch (e) {
-      logger.error("Konum yukleme hatasi", e);
+      logger.error("Konum yükleme hatası", e);
     }
   }
 
@@ -97,10 +116,8 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
       await _requestPermissions();
       context.read<LocationCubit>().toggleTracking();
     } catch (e) {
-      logger.error("Takip durumu degistirme hatasi", e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Takip durumu degistirilemedi: $e")),
-      );
+      logger.error("Takip durumu değiştirme hatası", e);
+      _showAlert('Takip Hatası', "Takip durumu değiştirilemedi: $e");
     }
   }
 
@@ -124,9 +141,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
                 context.read<LocationCubit>().resetLocations();
               } catch (e) {
                 logger.error("Konumları sıfırlama hatası.", e);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Konumlar sıfırlanamadı: $e")),
-                );
+                _showAlert('Sıfırlama Hatası', "Konumlar sıfırlanamadı: $e");
               }
             },
             child: const Text('Sıfırla'),
@@ -153,6 +168,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
             ),
           ],
         ),
+        backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         bottom: PreferredSize(
@@ -175,9 +191,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
         listener: (context, state) {
           if (state.status == LocationStatus.failure &&
               state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
-            );
+            _showAlert('Hata', state.errorMessage!);
           }
         },
         builder: (context, state) {

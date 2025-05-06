@@ -25,13 +25,12 @@ class LocationServiceImpl implements LocationService {
     }
   }
 
-  // TODO: Ayarları tekrar gözden geçir.
   @override
   Stream<LatLng> getLocationStream() {
     return Geolocator.getPositionStream(
       locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, //TODO: Sabitlere eklenebilir.
+        distanceFilter: 10,
         foregroundNotificationConfig: ForegroundNotificationConfig(
           notificationText: "Konumunuz arka planda güncelleniyor",
           notificationTitle: "Konum Servisi Aktif",

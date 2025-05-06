@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/entities/location_entity.dart';
 import '../../../core/constants/map_constants.dart';
 import '../../../core/utils/logger_utils.dart';
+import '../../../core/utils/location_utils.dart';
 import '../cubits/location/location_cubit.dart';
 import '../cubits/location/location_state.dart';
 import 'dart:math' as math;
@@ -118,6 +119,27 @@ class _MapWidgetState extends State<MapWidget> {
     );
   }
 
+  // Helper method to show alerts
+  void _showAlert(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Tamam'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _goToCurrentLocation() {
     try {
       final currentPosition = widget.currentPosition;
@@ -154,42 +176,27 @@ class _MapWidgetState extends State<MapWidget> {
           }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mevcut konum bulunamadı')),
-        );
+        _showAlert('Konum Hatası', 'Mevcut konum bulunamadı');
       }
     } catch (e) {
       logger.error("Konuma gitme hatası", e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Konuma gidilemedi: $e')),
-      );
+      _showAlert('Konum Hatası', 'Konuma gidilemedi: $e');
     }
   }
 
   double _calculateDistance(
       double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371e3;
-    final phi1 = lat1 * math.pi / 180;
-    final phi2 = lat2 * math.pi / 180;
-    final deltaPhi = (lat2 - lat1) * math.pi / 180;
-    final deltaLambda = (lon2 - lon1) * math.pi / 180;
-
-    final a = math.sin(deltaPhi / 2) * math.sin(deltaPhi / 2) +
-        math.cos(phi1) *
-            math.cos(phi2) *
-            math.sin(deltaLambda / 2) *
-            math.sin(deltaLambda / 2);
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-
-    return R * c;
+    // Using the utility method from LocationUtils instead of duplicating the calculation
+    return LocationUtils.calculateDistance(
+      LatLng(lat1, lon1),
+      LatLng(lat2, lon2),
+    );
   }
 
   void _fitAllMarkers() {
     try {
       if (widget.locations.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gösterilecek konum bulunamadı')),
-        );
+        _showAlert('Konum Hatası', 'Gösterilecek konum bulunamadı');
         return;
       }
 
@@ -209,7 +216,7 @@ class _MapWidgetState extends State<MapWidget> {
         maxLng = math.max(maxLng, widget.currentPosition!.longitude);
       }
 
-      final paddingFactor = 0.5;
+      const paddingFactor = 0.5;
       final latDiff = (maxLat - minLat) * paddingFactor;
       final lngDiff = (maxLng - minLng) * paddingFactor;
 
@@ -223,9 +230,7 @@ class _MapWidgetState extends State<MapWidget> {
       _mapController.move(LatLng(centerLat, centerLng), zoom);
     } catch (e) {
       logger.error("Markerları sığdırma hatası", e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Markerlar sığdırılamadı: $e')),
-      );
+      _showAlert('Harita Hatası', 'Markerlar sığdırılamadı: $e');
     }
   }
 
@@ -237,9 +242,7 @@ class _MapWidgetState extends State<MapWidget> {
       _mapController.move(_mapController.camera.center, newZoom);
     } catch (e) {
       logger.error("Yakınlaştırma hatası", e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Yakınlaştırma yapılamadı: $e')),
-      );
+      _showAlert('Harita Hatası', 'Yakınlaştırma yapılamadı: $e');
     }
   }
 
@@ -251,9 +254,7 @@ class _MapWidgetState extends State<MapWidget> {
       _mapController.move(_mapController.camera.center, newZoom);
     } catch (e) {
       logger.error("Uzaklaştırma hatası", e);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Uzaklaştırma yapılamadı: $e')),
-      );
+      _showAlert('Harita Hatası', 'Uzaklaştırma yapılamadı: $e');
     }
   }
 
@@ -334,10 +335,6 @@ class _MapWidgetState extends State<MapWidget> {
         final location = widget.locations[i];
         final isLastLocation = i == widget.locations.length - 1;
         final isSelected = selectedLocation?.id == location.id;
-        final isCurrentLocation = currentPosition != null &&
-            isLastLocation &&
-            location.position.latitude == currentPosition.latitude &&
-            location.position.longitude == currentPosition.longitude;
 
         final isActive =
             isSelected || (isLastLocation && selectedLocation == null);

@@ -20,7 +20,7 @@ class PermissionUtils {
 
         await Future.delayed(const Duration(milliseconds: 300));
       } catch (e) {
-        logger.error('Izin isteme hatasi: ${permission.toString()}', e);
+        logger.error('İzin isteme hatası: ${permission.toString()}', e);
         statuses[permission] = PermissionStatus.denied;
       }
     }
@@ -37,7 +37,7 @@ class PermissionUtils {
     final locationStatus = await Permission.location.status;
     if (!locationStatus.isGranted) {
       logger.warning(
-          'Arka plan konum izni istemeden once normal konum izni gerekli');
+          'Arka plan konum izni istemeden önce normal konum izni gerekli');
       return false;
     }
 

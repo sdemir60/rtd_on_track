@@ -22,9 +22,9 @@ class NotificationUtils {
       );
 
       await createNotificationChannel();
-      logger.info("Bildirim sistemi basariyla baslatildi");
+      logger.info("Bildirim sistemi başariyla başlatıldı.");
     } catch (e) {
-      logger.error("Bildirim sistemi baslatilirken hata olustu", e);
+      logger.error("Bildirim sistemi başlatılırken hata oluştu.", e);
     }
   }
 
@@ -44,9 +44,9 @@ class NotificationUtils {
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(channel);
 
-      logger.info("Bildirim kanali basariyla olusturuldu");
+      logger.info("Bildirim kanalı başarıyla oluşturuldu.");
     } catch (e) {
-      logger.error("Bildirim kanali olusturulurken hata olustu", e);
+      logger.error("Bildirim kanalı oluşturulurken hata oluştu.", e);
     }
   }
 
@@ -54,7 +54,7 @@ class NotificationUtils {
     try {
       bool hasPermission = await PermissionUtils.checkNotificationPermission();
       if (!hasPermission) {
-        logger.warning("Bildirim izni verilmemis, bildirim gosterilemiyor");
+        logger.warning("Bildirim izni verilmemiş, bildirim gösterilemiyor.");
       }
 
       const AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -80,9 +80,9 @@ class NotificationUtils {
         platformChannelSpecifics,
       );
 
-      logger.info("On plan servisi bildirimi gosterildi");
+      logger.info("Ön plan servisi bildirimi gösterildi.");
     } catch (e) {
-      logger.error("Bildirim gosterilirken hata olustu", e);
+      logger.error("Bildirim gösterilirken hata oluştu.", e);
     }
   }
 }

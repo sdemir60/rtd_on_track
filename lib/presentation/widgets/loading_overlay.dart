@@ -10,7 +10,7 @@ class LoadingOverlay extends StatelessWidget {
   final double elevation;
 
   const LoadingOverlay({
-    Key? key,
+    super.key,
     required this.isLoading,
     required this.child,
     this.backgroundColor = Colors.black,
@@ -18,7 +18,7 @@ class LoadingOverlay extends StatelessWidget {
     this.indicatorSize = 40.0,
     this.indicatorColor = Colors.blue,
     this.elevation = 4.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
