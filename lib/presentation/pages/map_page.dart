@@ -125,8 +125,7 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
               } catch (e) {
                 logger.error("Konumları sıfırlama hatası.", e);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text("Konumlar sıfırlanamadı: $e")),
+                  SnackBar(content: Text("Konumlar sıfırlanamadı: $e")),
                 );
               }
             },
@@ -155,6 +154,22 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
           ],
         ),
         centerTitle: true,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4.0),
+          child: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            height: 4,
+          ),
+        ),
       ),
       body: BlocConsumer<LocationCubit, LocationState>(
         listener: (context, state) {
