@@ -122,7 +122,37 @@ class _MapWidgetState extends State<MapWidget> {
     try {
       final currentPosition = widget.currentPosition;
       if (currentPosition != null) {
-        _mapController.move(currentPosition, MapConstants.defaultZoom);
+        final zoomLevel = math.max(MapConstants.defaultZoom - 0.5, 5.0);
+        _mapController.move(currentPosition, zoomLevel);
+
+        final locations = widget.locations;
+        if (locations.isNotEmpty) {
+          LocationEntity? targetLocation;
+
+          final lastLocation = locations.last;
+          if (lastLocation.position.latitude == currentPosition.latitude &&
+              lastLocation.position.longitude == currentPosition.longitude) {
+            targetLocation = lastLocation;
+          } else {
+            double minDistance = double.infinity;
+            for (final location in locations) {
+              final distance = _calculateDistance(
+                  location.position.latitude,
+                  location.position.longitude,
+                  currentPosition.latitude,
+                  currentPosition.longitude);
+
+              if (distance < minDistance) {
+                minDistance = distance;
+                targetLocation = location;
+              }
+            }
+          }
+
+          if (targetLocation != null) {
+            context.read<LocationCubit>().selectLocation(targetLocation);
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Mevcut konum bulunamadı')),
@@ -134,6 +164,24 @@ class _MapWidgetState extends State<MapWidget> {
         SnackBar(content: Text('Konuma gidilemedi: $e')),
       );
     }
+  }
+
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371e3;
+    final phi1 = lat1 * math.pi / 180;
+    final phi2 = lat2 * math.pi / 180;
+    final deltaPhi = (lat2 - lat1) * math.pi / 180;
+    final deltaLambda = (lon2 - lon1) * math.pi / 180;
+
+    final a = math.sin(deltaPhi / 2) * math.sin(deltaPhi / 2) +
+        math.cos(phi1) *
+            math.cos(phi2) *
+            math.sin(deltaLambda / 2) *
+            math.sin(deltaLambda / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
+    return R * c;
   }
 
   void _fitAllMarkers() {
@@ -230,7 +278,8 @@ class _MapWidgetState extends State<MapWidget> {
           ),
           BlocBuilder<LocationCubit, LocationState>(
             buildWhen: (previous, current) =>
-                previous.selectedLocation != current.selectedLocation,
+                previous.selectedLocation != current.selectedLocation ||
+                previous.currentPosition != current.currentPosition,
             builder: (context, state) {
               return MarkerClusterLayerWidget(
                 options: MarkerClusterLayerOptions(
@@ -254,21 +303,6 @@ class _MapWidgetState extends State<MapWidget> {
               );
             },
           ),
-          if (widget.currentPosition != null)
-            MarkerLayer(
-              markers: [
-                Marker(
-                  width: 40.0,
-                  height: 40.0,
-                  point: widget.currentPosition!,
-                  child: const Icon(
-                    Icons.my_location,
-                    color: Colors.blue,
-                    size: 30,
-                  ),
-                ),
-              ],
-            ),
         ],
       );
     } catch (e) {
@@ -291,12 +325,24 @@ class _MapWidgetState extends State<MapWidget> {
 
   List<Marker> _buildMarkers() {
     try {
-      return widget.locations.map((location) {
-        final selectedLocation =
-            context.read<LocationCubit>().state.selectedLocation;
-        final isSelected = selectedLocation?.id == location.id;
+      final markers = <Marker>[];
+      final state = context.read<LocationCubit>().state;
+      final selectedLocation = state.selectedLocation;
+      final currentPosition = widget.currentPosition;
 
-        return Marker(
+      for (int i = 0; i < widget.locations.length; i++) {
+        final location = widget.locations[i];
+        final isLastLocation = i == widget.locations.length - 1;
+        final isSelected = selectedLocation?.id == location.id;
+        final isCurrentLocation = currentPosition != null &&
+            isLastLocation &&
+            location.position.latitude == currentPosition.latitude &&
+            location.position.longitude == currentPosition.longitude;
+
+        final isActive =
+            isSelected || (isLastLocation && selectedLocation == null);
+
+        markers.add(Marker(
           width: 40.0,
           height: 40.0,
           point: location.position,
@@ -310,12 +356,39 @@ class _MapWidgetState extends State<MapWidget> {
             },
             child: Icon(
               Icons.location_on,
-              color: isSelected ? Colors.blue : Colors.red,
+              color: isActive ? Colors.blue : Colors.red,
               size: 30,
             ),
           ),
-        );
-      }).toList();
+        ));
+      }
+
+      if (currentPosition != null &&
+          !widget.locations.any((loc) =>
+              loc.position.latitude == currentPosition.latitude &&
+              loc.position.longitude == currentPosition.longitude)) {
+        final isActive = selectedLocation == null && widget.locations.isEmpty;
+
+        markers.add(Marker(
+          width: 40.0,
+          height: 40.0,
+          point: currentPosition,
+          child: GestureDetector(
+            onTap: () {
+              if (selectedLocation != null) {
+                context.read<LocationCubit>().clearSelectedLocation();
+              }
+            },
+            child: Icon(
+              Icons.location_on,
+              color: isActive ? Colors.blue : Colors.red,
+              size: 30,
+            ),
+          ),
+        ));
+      }
+
+      return markers;
     } catch (e) {
       logger.error("Marker oluşturma hatası", e);
       return [];

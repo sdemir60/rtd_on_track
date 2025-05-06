@@ -108,26 +108,29 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konumlari Sifirla'),
-        content: const Text('Tum konum gecmisi silinecek. Emin misiniz?'),
+        title: const Text('Konumları Sıfırla'),
+        content: const Text('Tüm konum geçmişi silinecek. Emin misiniz?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Iptal'),
+            child: const Text('İptal'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               try {
+                context.read<LocationCubit>().clearSelectedLocation();
+
                 context.read<LocationCubit>().resetLocations();
               } catch (e) {
-                logger.error("Konumlari sifirlama hatasi", e);
+                logger.error("Konumları sıfırlama hatası.", e);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Konumlar sifirlanamadi: $e")),
+                  SnackBar(
+                      content: Text("Konumlar sıfırlanamadı: $e")),
                 );
               }
             },
-            child: const Text('Sifirla'),
+            child: const Text('Sıfırla'),
           ),
         ],
       ),

@@ -136,6 +136,7 @@ class LocationCubit extends Cubit<LocationState> {
             emit(state.copyWith(
               locations: updatedLocations,
               clearError: true,
+              clearSelectedLocation: true,
             ));
           }
         },
