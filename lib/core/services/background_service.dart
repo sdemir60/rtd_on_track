@@ -60,6 +60,14 @@ void onStart(ServiceInstance service) async {
       'isRunning': true,
     });
 
+    Timer.periodic(const Duration(minutes: 15), (timer) {
+      service.invoke('update', {
+        'isRunning': true,
+        'lastCheck': DateTime.now().toString(),
+      });
+      logger.info("Arka plan servisi hala çalışıyor: ${DateTime.now()}");
+    });
+
     final preferencesService = PreferencesService();
     final isTracking = await preferencesService.getTrackingStatus();
     if (isTracking) {
@@ -172,7 +180,7 @@ class BackgroundServiceImpl implements BackgroundService {
       await _service.configure(
         androidConfiguration: AndroidConfiguration(
           onStart: onStart,
-          autoStart: false,
+          autoStart: true,
           isForegroundMode: true,
           notificationChannelId: AppConstants.locationChannelId,
           initialNotificationTitle: AppConstants.locationNotificationTitle,
@@ -180,7 +188,7 @@ class BackgroundServiceImpl implements BackgroundService {
           foregroundServiceNotificationId: 888,
         ),
         iosConfiguration: IosConfiguration(
-          autoStart: false,
+          autoStart: true,
           onForeground: (service) async {},
           onBackground: (service) async {
             return true;
@@ -231,6 +239,18 @@ class BackgroundServiceImpl implements BackgroundService {
       _service.invoke('startLocationTracking', {});
 
       _startForegroundTracking(trackLocationUseCase);
+
+      Timer.periodic(const Duration(minutes: 30), (timer) async {
+        final serviceRunning = await isServiceRunning();
+        if (!serviceRunning) {
+          logger.warning("Servis durmuş, yeniden başlatılıyor");
+          timer.cancel();
+          await _service.startService();
+          _service.invoke('startLocationTracking', {});
+        } else {
+          logger.info("Watchdog: Servis hala çalışıyor.");
+        }
+      });
 
       logger.info("Arka plan servisi başarıyla başlatıldı");
     } catch (e, stackTrace) {
