@@ -314,26 +314,13 @@ class _MapWidgetState extends State<MapWidget> {
       final markers = <Marker>[];
       final state = context.read<LocationCubit>().state;
       final selectedLocation = state.selectedLocation;
-      final currentPosition = widget.currentPosition;
-
-      final processedLocationIds = <int>{};
 
       for (int i = 0; i < widget.locations.length; i++) {
         final location = widget.locations[i];
-
-        if (location.id != null && processedLocationIds.contains(location.id)) {
-          continue;
-        }
-
-        if (location.id != null) {
-          processedLocationIds.add(location.id!);
-        }
-
         final isLastLocation = i == widget.locations.length - 1;
         final isSelected = selectedLocation?.id == location.id;
 
-        final isActive =
-            isSelected || (isLastLocation && selectedLocation == null);
+        final isBlue = isSelected || (isLastLocation && selectedLocation == null);
 
         markers.add(Marker(
           width: 40.0,
@@ -349,39 +336,11 @@ class _MapWidgetState extends State<MapWidget> {
             },
             child: Icon(
               Icons.location_on,
-              color: isActive ? Colors.blue : Colors.red,
+              color: isBlue ? Colors.blue : Colors.red,
               size: 30,
             ),
           ),
         ));
-      }
-
-      if (currentPosition != null) {
-        bool isCurrentPositionSaved = widget.locations.any((loc) =>
-            loc.position.latitude == currentPosition.latitude &&
-            loc.position.longitude == currentPosition.longitude);
-
-        if (!isCurrentPositionSaved) {
-          final isActive = selectedLocation == null && widget.locations.isEmpty;
-
-          markers.add(Marker(
-            width: 40.0,
-            height: 40.0,
-            point: currentPosition,
-            child: GestureDetector(
-              onTap: () {
-                if (selectedLocation != null) {
-                  context.read<LocationCubit>().clearSelectedLocation();
-                }
-              },
-              child: Icon(
-                Icons.location_on,
-                color: isActive ? Colors.blue : Colors.red,
-                size: 30,
-              ),
-            ),
-          ));
-        }
       }
 
       return markers;

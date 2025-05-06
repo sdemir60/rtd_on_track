@@ -133,10 +133,12 @@ class LocationCubit extends Cubit<LocationState> {
           if (newLocation != null) {
             final updatedLocations = List<LocationEntity>.from(state.locations)
               ..add(newLocation);
+
+            logger.info("Yeni konum eklendi: ${newLocation.position}");
+
             emit(state.copyWith(
               locations: updatedLocations,
               clearError: true,
-              clearSelectedLocation: true,
             ));
           }
         },

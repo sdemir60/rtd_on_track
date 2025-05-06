@@ -9,44 +9,41 @@ import 'package:latlong2/latlong.dart';
 
 class TrackLocationUseCase {
   final LocationRepository repository;
-  LatLng? _lastSavedPosition;
+  LocationEntity? _lastSavedLocation;
 
   TrackLocationUseCase(this.repository);
 
   Future<Either<Failure, LocationEntity?>> call(LatLng currentPosition) async {
     try {
-      if (_lastSavedPosition == null ||
-          LocationUtils.isSignificantMovement(
-              _lastSavedPosition!,
-              currentPosition,
-              AppConstants.locationDistanceThreshold.toDouble())) {
-
+      if (_lastSavedLocation == null) {
         final locationsResult = await repository.getLocations();
-        bool isDuplicate = false;
-        
         await locationsResult.fold(
-          (failure) => isDuplicate = false, 
+          (failure) => null,
           (locations) {
-            final now = DateTime.now();
-            for (final loc in locations) {
-              if (loc.position.latitude == currentPosition.latitude && 
-                  loc.position.longitude == currentPosition.longitude) {
-                final timeDiff = now.difference(loc.timestamp).inMinutes.abs();
-                if (timeDiff < 5) {
-                  isDuplicate = true;
-                  break;
-                }
-              }
+            if (locations.isNotEmpty) {
+              _lastSavedLocation = locations.last;
+              logger.info("Son kaydedilen konum veritabanından alındı: ${_lastSavedLocation!.position}");
             }
           }
         );
+      }
+
+      bool shouldSaveLocation = false;
+      
+      if (_lastSavedLocation == null) {
+        shouldSaveLocation = true;
+        logger.info("İlk konum kaydediliyor");
+      } else {
+        double distance = LocationUtils.calculateDistance(
+          _lastSavedLocation!.position,
+          currentPosition
+        );
         
-        if (isDuplicate) {
-          logger.info("Aynı konumda yakın zamanlı bir kayıt zaten var, yeni kayıt eklenmeyecek.");
-          _lastSavedPosition = currentPosition;
-          return const Right(null);
-        }
-        
+        shouldSaveLocation = distance >= AppConstants.locationDistanceThreshold.toDouble();
+        logger.info("Konum mesafesi: $distance metre, eşik: ${AppConstants.locationDistanceThreshold} metre, kaydedilecek: $shouldSaveLocation");
+      }
+
+      if (shouldSaveLocation) {
         final addressResult = await repository.getAddressFromCoordinates(
             currentPosition.latitude, currentPosition.longitude);
 
@@ -63,7 +60,8 @@ class TrackLocationUseCase {
         final result = await repository.saveLocation(location);
 
         return result.fold((failure) => Left(failure), (savedLocation) {
-          _lastSavedPosition = currentPosition;
+          _lastSavedLocation = savedLocation;
+          logger.info("Yeni konum kaydedildi: ${savedLocation.position}");
           return Right(savedLocation);
         });
       }
