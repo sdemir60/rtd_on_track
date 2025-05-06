@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../cubits/location/location_cubit.dart';
 import '../cubits/location/location_state.dart';
 import '../widgets/map_widget.dart';
@@ -98,7 +99,94 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
   void _toggleTracking() async {
     try {
-      await _requestPermissions();
+      bool hasLocationPermission =
+          await PermissionUtils.checkLocationPermission();
+
+      if (!hasLocationPermission) {
+        hasLocationPermission =
+            await PermissionUtils.requestLocationPermission();
+
+        if (!hasLocationPermission &&
+            await PermissionUtils.isPermanentlyDenied(Permission.location)) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Konum İzni Gerekli'),
+              content: const Text(
+                  'Uygulamanın düzgün çalışması için konum izni gereklidir. Ayarlardan konum iznini etkinleştirmek ister misiniz?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('İptal'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    PermissionUtils.openSettings();
+                  },
+                  child: const Text('Ayarları Aç'),
+                ),
+              ],
+            ),
+          );
+          return;
+        } else if (!hasLocationPermission) {
+          _showAlert('Konum İzni Gerekli',
+              'Takip başlatmak için konum izni gereklidir.');
+          return;
+        }
+      }
+
+      if (hasLocationPermission) {
+        bool hasBackgroundLocationPermission =
+            await PermissionUtils.checkBackgroundLocationPermission();
+
+        if (!hasBackgroundLocationPermission) {
+          hasBackgroundLocationPermission =
+              await PermissionUtils.requestBackgroundLocationPermission();
+
+          if (!hasBackgroundLocationPermission) {
+            logger.info(
+                'Arka plan konum izni verilmedi, ancak takip başlatılabilir');
+            if (await PermissionUtils.isPermanentlyDenied(
+                Permission.locationAlways)) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Arka Plan Konum İzni'),
+                  content: const Text(
+                      'Uygulama arka plandayken konum takibi için ek izin gereklidir. Ayarlardan bu izni etkinleştirmek ister misiniz?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        context.read<LocationCubit>().toggleTracking();
+                      },
+                      child: const Text('Hayır, Devam Et'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        PermissionUtils.openSettings();
+                      },
+                      child: const Text('Ayarları Aç'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+          }
+        }
+      }
+
+      bool hasNotificationPermission =
+          await PermissionUtils.checkNotificationPermission();
+      if (!hasNotificationPermission) {
+        hasNotificationPermission =
+            await PermissionUtils.requestNotificationPermission();
+      }
+
       context.read<LocationCubit>().toggleTracking();
     } catch (e) {
       logger.error("Takip durumu değiştirme hatası", e);

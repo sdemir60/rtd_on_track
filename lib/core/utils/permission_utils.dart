@@ -30,7 +30,9 @@ class PermissionUtils {
 
   static Future<bool> requestLocationPermission() async {
     final statuses = await requestPermissions([Permission.location]);
-    return statuses[Permission.location]?.isGranted ?? false;
+    final isGranted = statuses[Permission.location]?.isGranted ?? false;
+    logger.info('Konum izni durumu: $isGranted');
+    return isGranted;
   }
 
   static Future<bool> requestBackgroundLocationPermission() async {
@@ -42,12 +44,16 @@ class PermissionUtils {
     }
 
     final statuses = await requestPermissions([Permission.locationAlways]);
-    return statuses[Permission.locationAlways]?.isGranted ?? false;
+    final isGranted = statuses[Permission.locationAlways]?.isGranted ?? false;
+    logger.info('Arka plan konum izni durumu: $isGranted');
+    return isGranted;
   }
 
   static Future<bool> requestNotificationPermission() async {
     final statuses = await requestPermissions([Permission.notification]);
-    return statuses[Permission.notification]?.isGranted ?? false;
+    final isGranted = statuses[Permission.notification]?.isGranted ?? false;
+    logger.info('Bildirim izni durumu: $isGranted');
+    return isGranted;
   }
 
   static Future<bool> checkLocationPermission() async {
@@ -60,5 +66,14 @@ class PermissionUtils {
 
   static Future<bool> checkNotificationPermission() async {
     return await Permission.notification.isGranted;
+  }
+
+  static Future<bool> isPermanentlyDenied(Permission permission) async {
+    final status = await permission.status;
+    return status.isPermanentlyDenied;
+  }
+
+  static Future<bool> openSettings() async {
+    return await openAppSettings();
   }
 }
