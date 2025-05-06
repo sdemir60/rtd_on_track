@@ -119,8 +119,12 @@ void _startLocationTracking() async {
       }
 
       if (_trackLocationUseCase != null) {
-        await _trackLocationUseCase!(position);
-        logger.info("Konum veritabanına kaydedildi: $position");
+        try {
+          await _trackLocationUseCase!(position);
+          logger.info("Konum veritabanına kaydedildi: $position");
+        } catch (e, stackTrace) {
+          logger.error("Konum kaydetme hatası", e, stackTrace);
+        }
       }
 
       logger.info("Konum alındı: $position");
@@ -243,8 +247,8 @@ class BackgroundServiceImpl implements BackgroundService {
         _locationService?.getLocationStream().listen((position) async {
       try {
         await trackLocationUseCase(position);
-      } catch (e) {
-        logger.error("Ön planda konum takibi hatası", e);
+      } catch (e, stackTrace) {
+        logger.error("Ön planda konum takibi hatası", e, stackTrace);
       }
     });
   }

@@ -5,6 +5,7 @@ import '../../core/errors/failures.dart';
 import '../datasources/local/location_local_datasource.dart';
 import '../models/location_model.dart';
 import '../../core/services/geocoding_service.dart';
+import '../../core/utils/logger_utils.dart';
 
 class LocationRepositoryImpl implements LocationRepository {
   final LocationLocalDataSource localDataSource;
@@ -57,7 +58,8 @@ class LocationRepositoryImpl implements LocationRepository {
           await geocodingService.getAddressFromCoordinates(latitude, longitude);
       return Right(address);
     } catch (e) {
-      return Left(ServiceFailure(message: e.toString()));
+      logger.error("Repository: Adres bilgisi alınamadı", e);
+      return Right("Konum bilgisi alınamadı");
     }
   }
 }

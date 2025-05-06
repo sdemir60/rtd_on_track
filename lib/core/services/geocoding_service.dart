@@ -19,7 +19,7 @@ class GeocodingServiceImpl implements GeocodingService {
       return null;
     } catch (e) {
       logger.error("Adres bilgisi alınamadı", e);
-      return null;
+      return "Konum bilgisi alınamadı";
     }
   }
 }
