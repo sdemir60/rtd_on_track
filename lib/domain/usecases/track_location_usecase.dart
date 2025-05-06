@@ -20,6 +20,33 @@ class TrackLocationUseCase {
               _lastSavedPosition!,
               currentPosition,
               AppConstants.locationDistanceThreshold.toDouble())) {
+
+        final locationsResult = await repository.getLocations();
+        bool isDuplicate = false;
+        
+        await locationsResult.fold(
+          (failure) => isDuplicate = false, 
+          (locations) {
+            final now = DateTime.now();
+            for (final loc in locations) {
+              if (loc.position.latitude == currentPosition.latitude && 
+                  loc.position.longitude == currentPosition.longitude) {
+                final timeDiff = now.difference(loc.timestamp).inMinutes.abs();
+                if (timeDiff < 5) {
+                  isDuplicate = true;
+                  break;
+                }
+              }
+            }
+          }
+        );
+        
+        if (isDuplicate) {
+          logger.info("Aynı konumda yakın zamanlı bir kayıt zaten var, yeni kayıt eklenmeyecek.");
+          _lastSavedPosition = currentPosition;
+          return const Right(null);
+        }
+        
         final addressResult = await repository.getAddressFromCoordinates(
             currentPosition.latitude, currentPosition.longitude);
 

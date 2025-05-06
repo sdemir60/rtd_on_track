@@ -92,11 +92,31 @@ class LocationLocalDataSourceImpl implements LocationLocalDataSource {
         return location;
       }
 
-      await _isar!.writeTxn(() async {
-        location.id = await _isar!.locationModels.put(location);
-      });
+      final existingLocations = await _isar!.locationModels
+          .filter()
+          .latitudeEqualTo(location.latitude)
+          .longitudeEqualTo(location.longitude)
+          .findAll();
 
-      logger.info("Konum başarıyla kaydedildi. ID: ${location.id}");
+      bool isDuplicate = false;
+      for (var existing in existingLocations) {
+        final timeDifference =
+            location.timestamp.difference(existing.timestamp).inSeconds.abs();
+        if (timeDifference < 5) {
+          logger.info(
+              "Aynı konumda ve yakın zamanda bir kayıt zaten var, yeni kayıt eklenmeyecek.");
+          isDuplicate = true;
+          return existing;
+        }
+      }
+
+      if (!isDuplicate) {
+        await _isar!.writeTxn(() async {
+          location.id = await _isar!.locationModels.put(location);
+        });
+        logger.info("Konum başarıyla kaydedildi. ID: ${location.id}");
+      }
+
       return location;
     } catch (e, stackTrace) {
       logger.error("Konum kaydetme hatası", e, stackTrace);
